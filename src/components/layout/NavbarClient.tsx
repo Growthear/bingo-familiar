@@ -207,10 +207,10 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
             <div className="flex-shrink-0 border-t border-sky-50">
               {/* Íconos de redes */}
               <div className="px-4 pt-4 pb-3">
-                <p className="text-[10px] font-bold text-sky-400 uppercase tracking-wider mb-3">
+                <p className="text-[10px] font-bold text-sky-400 uppercase tracking-wider mb-3 text-center">
                   Redes sociales
                 </p>
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center justify-center gap-3">
                   <a
                     href={INSTAGRAM_URL}
                     target="_blank"
@@ -250,9 +250,12 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
                 </div>
               </div>
 
+              {/* Separador */}
+              {profile && <div className="h-px bg-sky-100 mx-4" />}
+
               {/* Logout */}
               {profile && (
-                <div className="px-4 pb-8 pt-1">
+                <div className="px-4 pb-8 pt-2">
                   <form action={logout}>
                     <Button
                       variant="ghost"
