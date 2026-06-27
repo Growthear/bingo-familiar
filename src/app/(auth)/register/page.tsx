@@ -14,8 +14,8 @@ export default function RegisterPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <div className="text-4xl mb-2">🎱</div>
-        <CardTitle className="text-2xl">Crear cuenta</CardTitle>
+        <div className="text-5xl mb-2">🇦🇷</div>
+        <CardTitle className="text-2xl text-sky-700">Crear cuenta</CardTitle>
         <CardDescription>Registrate para jugar con tu familia</CardDescription>
       </CardHeader>
       <form action={action}>
@@ -39,7 +39,7 @@ export default function RegisterPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
-          <Button className="w-full" type="submit" disabled={pending}>
+          <Button className="w-full bg-sky-500 hover:bg-sky-600" type="submit" disabled={pending}>
             {pending ? 'Creando cuenta...' : 'Crear cuenta'}
           </Button>
           <p className="text-sm text-muted-foreground text-center">

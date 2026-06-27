@@ -16,14 +16,16 @@ export default async function HomePage() {
     .single()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 to-purple-100">
+    <div className="min-h-screen bg-gradient-to-b from-sky-100 via-white to-sky-100">
       <Navbar />
       <main className="max-w-lg mx-auto px-4 py-8">
+        {/* Argentine flag accent */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-1">
-            ¡Hola, {profile?.username ?? 'jugador'}! 👋
+          <div className="text-5xl mb-3">🇦🇷</div>
+          <h1 className="text-3xl font-black text-sky-700 mb-1">
+            ¡Hola, {profile?.username ?? 'jugador'}!
           </h1>
-          <p className="text-muted-foreground">¿Qué querés hacer hoy?</p>
+          <p className="text-muted-foreground">¿Jugamos al bingo hoy?</p>
         </div>
         <HomeClient />
       </main>

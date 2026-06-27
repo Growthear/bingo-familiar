@@ -15,31 +15,33 @@ export default async function Navbar() {
   }
 
   return (
-    <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-40">
+    <header className="border-b border-sky-200 bg-white/90 backdrop-blur-sm sticky top-0 z-40">
       <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+        <Link href="/" className="flex items-center gap-2 font-black text-lg text-sky-700">
           <span>🎱</span>
           <span>Bingo Familiar</span>
         </Link>
         {user && profile ? (
           <div className="flex items-center gap-3">
-            <Link href="/ranking" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Ranking
+            <Link href="/ranking" className="text-sm text-muted-foreground hover:text-sky-600 transition-colors">
+              🏆 Ranking
             </Link>
             <Link href="/profile">
               <Avatar className="h-8 w-8 cursor-pointer">
-                <AvatarFallback className="text-xs bg-violet-100 text-violet-700">
+                <AvatarFallback className="text-xs bg-sky-100 text-sky-700 font-bold">
                   {profile.username.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
             </Link>
             <form action={logout}>
-              <Button variant="ghost" size="sm" type="submit">Salir</Button>
+              <Button variant="ghost" size="sm" type="submit" className="text-muted-foreground hover:text-sky-700">
+                Salir
+              </Button>
             </form>
           </div>
         ) : (
           <Link href="/login">
-            <Button size="sm">Ingresar</Button>
+            <Button size="sm" className="bg-sky-500 hover:bg-sky-600">Ingresar</Button>
           </Link>
         )}
       </div>

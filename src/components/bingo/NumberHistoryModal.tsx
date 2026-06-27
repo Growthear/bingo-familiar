@@ -15,7 +15,7 @@ export default function NumberHistoryModal({ drawnNumbers, open, onClose }: Numb
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-sm w-[calc(100vw-2rem)] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Números salidos ({drawnNumbers.length}/90)</DialogTitle>
         </DialogHeader>
@@ -29,9 +29,9 @@ export default function NumberHistoryModal({ drawnNumbers, open, onClose }: Numb
               className={cn(
                 'aspect-square rounded-lg flex items-center justify-center text-[11px] font-bold transition-colors',
                 n === lastDrawn
-                  ? 'bg-violet-600 text-white ring-2 ring-violet-300'
+                  ? 'bg-amber-400 text-gray-900 ring-2 ring-amber-600'
                   : drawnSet.has(n)
-                  ? 'bg-violet-200 text-violet-800'
+                  ? 'bg-sky-300 text-sky-900'
                   : 'bg-gray-100 text-gray-400'
               )}
             >
@@ -40,9 +40,9 @@ export default function NumberHistoryModal({ drawnNumbers, open, onClose }: Numb
           ))}
         </div>
         {drawnNumbers.length > 0 && (
-          <div className="mt-2 text-center text-sm text-muted-foreground">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             Últimos: {drawnNumbers.slice(-5).reverse().join(' · ')}
-          </div>
+          </p>
         )}
       </DialogContent>
     </Dialog>

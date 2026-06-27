@@ -56,48 +56,48 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
     <main className="max-w-lg mx-auto px-4 py-8 space-y-4">
       <div className="text-center">
         <Avatar className="h-20 w-20 mx-auto mb-3">
-          <AvatarFallback className="text-3xl bg-violet-200 text-violet-700 font-bold">
+          <AvatarFallback className="text-3xl bg-sky-100 text-sky-700 font-black">
             {profile.username.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <h1 className="text-2xl font-black">{profile.username}</h1>
+        <h1 className="text-2xl font-black text-sky-700">{profile.username}</h1>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Partidas', value: gamesPlayed, color: 'text-foreground' },
-          { label: 'Bingos', value: bingos, color: 'text-yellow-600' },
-          { label: 'Líneas', value: lineas, color: 'text-violet-600' },
-          { label: 'Ternos', value: ternos, color: 'text-blue-600' },
+          { label: 'Partidas', value: gamesPlayed, color: 'text-foreground', bg: 'bg-sky-50' },
+          { label: 'Bingos', value: bingos, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'Líneas', value: lineas, color: 'text-sky-600', bg: 'bg-sky-50' },
+          { label: 'Ternos', value: ternos, color: 'text-sky-500', bg: 'bg-sky-50' },
         ].map(stat => (
-          <div key={stat.label} className="bg-white rounded-xl p-3 text-center shadow-sm">
+          <div key={stat.label} className={`${stat.bg} border border-sky-100 rounded-xl p-3 text-center shadow-sm`}>
             <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
-            <p className="text-xs text-muted-foreground">{stat.label}</p>
+            <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{stat.label}</p>
           </div>
         ))}
       </div>
 
       {initialWins.length > 0 && (
-        <Card>
+        <Card className="border-sky-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Últimos premios</CardTitle>
+            <CardTitle className="text-base text-sky-700">Últimos premios</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {initialWins.slice(-5).reverse().map(w => (
-              <div key={w.id} className="flex justify-between items-center text-sm">
+              <div key={w.id} className="flex justify-between items-center text-sm py-0.5">
                 <span className="text-muted-foreground">
                   {new Date(w.won_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
                 </span>
-                <Badge variant="secondary">{PRIZE_LABELS[w.prize_type]}</Badge>
+                <Badge className="bg-sky-500 text-white">{PRIZE_LABELS[w.prize_type]}</Badge>
               </div>
             ))}
           </CardContent>
         </Card>
       )}
 
-      <Card>
+      <Card className="border-sky-200">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Cambiar nombre</CardTitle>
+          <CardTitle className="text-base text-sky-700">Cambiar nombre</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-1.5">
@@ -107,12 +107,13 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
               value={newUsername}
               onChange={e => setNewUsername(e.target.value)}
               maxLength={20}
+              className="border-sky-300"
             />
           </div>
           <Button
             onClick={updateUsername}
             disabled={isPending || newUsername.trim() === profile.username}
-            className="w-full"
+            className="w-full bg-sky-500 hover:bg-sky-600"
           >
             {isPending ? 'Guardando...' : 'Guardar cambios'}
           </Button>

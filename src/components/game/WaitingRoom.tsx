@@ -20,14 +20,14 @@ interface WaitingRoomProps {
 export default function WaitingRoom({ room, players, currentUserId }: WaitingRoomProps) {
   const isHost = currentUserId === room.host_id
   const [interval, setInterval] = useState(String(room.interval_seconds))
-  const [cards, setCards] = useState(String(room.cards_per_player))
-  const handleInterval = (v: string | null) => { if (v) setInterval(v) }
   const [isPending, startTransition] = useTransition()
   const supabase = createClient()
 
+  const handleInterval = (v: string | null) => { if (v) setInterval(v) }
+
   const copyCode = () => {
     navigator.clipboard.writeText(room.code)
-    toast.success('Código copiado!')
+    toast.success('¡Código copiado!')
   }
 
   const startGame = () => {
@@ -48,34 +48,45 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-center text-lg">Sala de espera</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Flag header */}
+      <div className="rounded-2xl overflow-hidden shadow-md">
+        <div className="h-3 bg-sky-400" />
+        <div className="bg-white py-5 flex flex-col items-center gap-1">
+          <span className="text-4xl">🇦🇷</span>
+          <h1 className="text-xl font-black text-sky-700">Sala de espera</h1>
+        </div>
+        <div className="h-3 bg-sky-400" />
+      </div>
+
+      <Card className="border-sky-200">
+        <CardContent className="pt-4 space-y-4">
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-1">Código de sala</p>
             <button
               onClick={copyCode}
-              className="text-3xl font-black tracking-widest font-mono text-violet-700 hover:text-violet-900 transition-colors"
+              className="text-4xl font-black tracking-widest font-mono text-sky-600 hover:text-sky-800 active:scale-95 transition-all"
             >
               {room.code}
             </button>
-            <p className="text-xs text-muted-foreground mt-1">Tocá para copiar</p>
+            <p className="text-xs text-muted-foreground mt-1">Tocá para copiar y compartilo con tu familia</p>
           </div>
 
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Jugadores ({players.length})</p>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-sky-700">Jugadores ({players.length})</p>
             <div className="flex flex-wrap gap-2">
               {players.map(p => (
-                <div key={p.id} className="flex items-center gap-1.5 bg-violet-50 rounded-full px-3 py-1">
+                <div key={p.id} className="flex items-center gap-1.5 bg-sky-50 border border-sky-200 rounded-full px-3 py-1.5">
                   <Avatar className="h-5 w-5">
-                    <AvatarFallback className="text-[9px] bg-violet-200 text-violet-700">
+                    <AvatarFallback className="text-[9px] bg-sky-200 text-sky-700 font-bold">
                       {p.username.slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">{p.username}</span>
-                  {p.id === room.host_id && <Badge variant="secondary" className="text-[10px] px-1 py-0">Host</Badge>}
+                  <span className="text-sm font-medium">{p.username}</span>
+                  {p.id === room.host_id && (
+                    <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-sky-100 text-sky-700">
+                      Host
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>
@@ -84,37 +95,43 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
       </Card>
 
       {isHost && (
-        <Card>
-          <CardContent className="pt-4 space-y-4">
+        <Card className="border-sky-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-sky-700">Configuración</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Velocidad</Label>
+              <Label>Velocidad (segundos entre números)</Label>
               <Select value={interval} onValueChange={handleInterval}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {[3, 5, 8, 10, 15, 20, 30].map(s => (
-                    <SelectItem key={s} value={String(s)}>{s} segundos</SelectItem>
+                    <SelectItem key={s} value={String(s)}>
+                      {s} segundos {s === 5 ? '(recomendado)' : ''}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <p className="text-xs text-muted-foreground">
-              Cartones por jugador: {room.cards_per_player} (no se puede cambiar una vez que alguien se unió)
+              Cartones por jugador: <strong>{room.cards_per_player}</strong>
             </p>
             <Button
-              className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 text-lg"
+              className="w-full bg-sky-500 hover:bg-sky-600 text-white font-black py-4 text-xl h-auto rounded-xl shadow-lg shadow-sky-200 active:scale-95 transition-all"
               onClick={startGame}
               disabled={isPending || players.length < 1}
             >
-              {isPending ? 'Iniciando...' : '¡Iniciar partida!'}
+              {isPending ? 'Iniciando...' : '¡Iniciar partida! 🎱'}
             </Button>
           </CardContent>
         </Card>
       )}
 
       {!isHost && (
-        <p className="text-center text-muted-foreground text-sm">
-          Esperando a que el host inicie la partida...
-        </p>
+        <div className="text-center py-6">
+          <div className="text-3xl mb-2 animate-pulse">⏳</div>
+          <p className="text-muted-foreground">Esperando a que el host inicie la partida...</p>
+        </div>
       )}
     </div>
   )

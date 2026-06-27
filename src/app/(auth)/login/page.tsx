@@ -14,8 +14,8 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <div className="text-4xl mb-2">🎱</div>
-        <CardTitle className="text-2xl">Bingo Familiar</CardTitle>
+        <div className="text-5xl mb-2">🇦🇷</div>
+        <CardTitle className="text-2xl text-sky-700">Bingo Familiar</CardTitle>
         <CardDescription>Iniciá sesión para jugar</CardDescription>
       </CardHeader>
       <form action={action}>
@@ -35,7 +35,7 @@ export default function LoginPage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
-          <Button className="w-full" type="submit" disabled={pending}>
+          <Button className="w-full bg-sky-500 hover:bg-sky-600" type="submit" disabled={pending}>
             {pending ? 'Ingresando...' : 'Ingresar'}
           </Button>
           <p className="text-sm text-muted-foreground text-center">

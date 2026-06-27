@@ -20,15 +20,25 @@ export default function HomeClient() {
 
   return (
     <Tabs defaultValue="join" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-6">
-        <TabsTrigger value="join">Unirme a sala</TabsTrigger>
-        <TabsTrigger value="create">Crear sala</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-2 mb-6 bg-sky-100">
+        <TabsTrigger
+          value="join"
+          className="data-[state=active]:bg-sky-500 data-[state=active]:text-white"
+        >
+          Unirme a sala
+        </TabsTrigger>
+        <TabsTrigger
+          value="create"
+          className="data-[state=active]:bg-sky-500 data-[state=active]:text-white"
+        >
+          Crear sala
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="join">
-        <Card>
+        <Card className="border-sky-200 shadow-sm">
           <CardHeader>
-            <CardTitle>Unirme a una sala</CardTitle>
+            <CardTitle className="text-sky-700">Unirme a una sala</CardTitle>
             <CardDescription>Pedile el código al organizador</CardDescription>
           </CardHeader>
           <form action={joinAction}>
@@ -45,11 +55,15 @@ export default function HomeClient() {
                   name="code"
                   required
                   placeholder="ej: ABC123"
-                  className="text-center text-xl tracking-widest font-mono uppercase"
+                  className="text-center text-2xl tracking-widest font-mono uppercase h-14 border-sky-300 focus:ring-sky-400"
                   maxLength={6}
                 />
               </div>
-              <Button className="w-full" type="submit" disabled={joinPending}>
+              <Button
+                className="w-full h-12 text-base bg-sky-500 hover:bg-sky-600 font-bold"
+                type="submit"
+                disabled={joinPending}
+              >
                 {joinPending ? 'Entrando...' : 'Entrar a la sala →'}
               </Button>
             </CardContent>
@@ -58,9 +72,9 @@ export default function HomeClient() {
       </TabsContent>
 
       <TabsContent value="create">
-        <Card>
+        <Card className="border-sky-200 shadow-sm">
           <CardHeader>
-            <CardTitle>Crear sala</CardTitle>
+            <CardTitle className="text-sky-700">Crear sala</CardTitle>
             <CardDescription>Vos sos el organizador de esta partida</CardDescription>
           </CardHeader>
           <form action={createAction}>
@@ -72,11 +86,8 @@ export default function HomeClient() {
               )}
               <div className="space-y-1.5">
                 <Label>Velocidad (segundos entre números)</Label>
-                <Select
-                  value={intervalSeconds}
-                  onValueChange={handleInterval}
-                >
-                  <SelectTrigger>
+                <Select value={intervalSeconds} onValueChange={handleInterval}>
+                  <SelectTrigger className="border-sky-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -90,11 +101,8 @@ export default function HomeClient() {
               </div>
               <div className="space-y-1.5">
                 <Label>Cartones por jugador</Label>
-                <Select
-                  value={cardsPerPlayer}
-                  onValueChange={handleCards}
-                >
-                  <SelectTrigger>
+                <Select value={cardsPerPlayer} onValueChange={handleCards}>
+                  <SelectTrigger className="border-sky-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -108,7 +116,11 @@ export default function HomeClient() {
               </div>
               <input type="hidden" name="interval_seconds" value={intervalSeconds} />
               <input type="hidden" name="cards_per_player" value={cardsPerPlayer} />
-              <Button className="w-full bg-violet-600 hover:bg-violet-700" type="submit" disabled={createPending}>
+              <Button
+                className="w-full h-12 text-base bg-sky-500 hover:bg-sky-600 font-bold"
+                type="submit"
+                disabled={createPending}
+              >
                 {createPending ? 'Creando sala...' : 'Crear sala →'}
               </Button>
             </CardContent>
