@@ -69,6 +69,7 @@ export default function GameClient({
   const [pozOpen, setPozOpen] = useState(false)
   const [playersOpen, setPlayersOpen] = useState(false)
   const [restarting, setRestarting] = useState(false)
+  const [confirmFinish, setConfirmFinish] = useState(false)
   const drawIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Refs to avoid stale closures in realtime handlers
@@ -419,13 +420,33 @@ export default function GameClient({
                 ▶ Reanudar
               </Button>
             )}
-            <Button
-              variant="outline"
-              className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
-              onClick={finishGame}
-            >
-              🏁 Finalizar
-            </Button>
+            {!confirmFinish ? (
+              <Button
+                variant="outline"
+                className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                onClick={() => setConfirmFinish(true)}
+              >
+                🏁 Finalizar
+              </Button>
+            ) : (
+              <div className="flex-1 flex gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-xs"
+                  onClick={() => setConfirmFinish(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs"
+                  onClick={() => { setConfirmFinish(false); finishGame() }}
+                >
+                  Sí, finalizar
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -477,7 +498,12 @@ export default function GameClient({
               return (
                 <div key={w.id} className="flex justify-between items-center text-sm">
                   <span className="font-medium">{winner?.username ?? '?'}</span>
-                  <Badge className="bg-sky-500 text-white text-xs">{PRIZE_LABELS[w.prize_type]}</Badge>
+                  <div className="flex items-center gap-1.5">
+                    {totalPot > 0 && (
+                      <span className="text-xs font-bold text-amber-700">{formatMoney(prizes[w.prize_type])}</span>
+                    )}
+                    <Badge className="bg-sky-500 text-white text-xs">{PRIZE_LABELS[w.prize_type]}</Badge>
+                  </div>
                 </div>
               )
             })}
@@ -540,29 +566,42 @@ export default function GameClient({
             <p className="text-xs text-center text-muted-foreground">
               {players.length} jugador{players.length !== 1 ? 'es' : ''} × {room.cards_per_player} cartón{room.cards_per_player !== 1 ? 'es' : ''} × {formatMoney(room.price_per_card)}
             </p>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              {(['terno', 'linea', 'bingo'] as const).map((prize) => {
-                const winner = wins.find(w => w.prize_type === prize)
-                const winnerName = winner
-                  ? (players.find(p => p.id === winner.player_id)?.username ?? '?')
-                  : null
-                return (
-                  <div
-                    key={prize}
-                    className={`rounded-xl p-3 border ${winner ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-100'}`}
-                  >
-                    <p className="text-[11px] font-bold text-amber-700 uppercase mb-1">{PRIZE_LABELS[prize]}</p>
-                    <p className="text-sm font-black text-amber-900">{formatMoney(prizes[prize])}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {prize === 'bingo' ? '60%' : prize === 'linea' ? '30%' : '10%'}
-                    </p>
-                    {winnerName && (
-                      <p className="text-[10px] text-green-700 font-bold mt-1 truncate">✓ {winnerName}</p>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+            {(() => {
+              const noTerno = !room.terno_enabled
+              const noLinea = !room.linea_enabled
+              const onlyBingo = noTerno && noLinea
+              const pcts: Record<PrizeType, string> = {
+                terno: noLinea ? '20%' : '10%',
+                linea: noTerno ? '20%' : '30%',
+                bingo: onlyBingo ? '100%' : (noTerno || noLinea) ? '80%' : '60%',
+              }
+              const activePrizes = (['terno', 'linea', 'bingo'] as const).filter(p =>
+                p === 'bingo' || (p === 'terno' && room.terno_enabled) || (p === 'linea' && room.linea_enabled)
+              )
+              return (
+                <div className={`grid gap-2 text-center ${activePrizes.length === 1 ? 'grid-cols-1' : activePrizes.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                  {activePrizes.map((prize) => {
+                    const winner = wins.find(w => w.prize_type === prize)
+                    const winnerName = winner
+                      ? (players.find(p => p.id === winner.player_id)?.username ?? '?')
+                      : null
+                    return (
+                      <div
+                        key={prize}
+                        className={`rounded-xl p-3 border ${winner ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-100'}`}
+                      >
+                        <p className="text-[11px] font-bold text-amber-700 uppercase mb-1">{PRIZE_LABELS[prize]}</p>
+                        <p className="text-sm font-black text-amber-900">{formatMoney(prizes[prize])}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{pcts[prize]}</p>
+                        {winnerName && (
+                          <p className="text-[10px] text-green-700 font-bold mt-1 truncate">✓ {winnerName}</p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
           </div>
         </DialogContent>
       </Dialog>
