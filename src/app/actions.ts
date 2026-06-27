@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { generateBingoCard } from '@/lib/bingo/cardGenerator'
+import { generateMultipleCards } from '@/lib/bingo/cardGenerator'
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
@@ -10,6 +10,23 @@ function generateCode(): string {
   return Array.from({ length: 6 }, () =>
     CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]
   ).join('')
+}
+
+async function insertCards(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  roomId: string,
+  playerId: string,
+  count: number
+) {
+  const cards = generateMultipleCards(count)
+  for (let i = 0; i < count; i++) {
+    await supabase.from('bingo_cards').insert({
+      room_id: roomId,
+      player_id: playerId,
+      card_number: i + 1,
+      numbers: cards[i],
+    })
+  }
 }
 
 export async function createRoom(_: unknown, formData: FormData) {
@@ -22,7 +39,6 @@ export async function createRoom(_: unknown, formData: FormData) {
   const showDrawn = formData.get('show_drawn') === '1'
   const pricePerCard = Math.max(0, parseInt(formData.get('price_per_card') as string) || 0)
 
-  // Find unique code
   let code = generateCode()
   for (let i = 0; i < 10; i++) {
     const { data } = await supabase.from('rooms').select('code').eq('code', code).single()
@@ -39,17 +55,50 @@ export async function createRoom(_: unknown, formData: FormData) {
   if (error || !room) return { error: 'No se pudo crear la sala' }
 
   await supabase.from('room_players').insert({ room_id: room.id, player_id: user.id })
-
-  for (let i = 1; i <= cardsPerPlayer; i++) {
-    await supabase.from('bingo_cards').insert({
-      room_id: room.id,
-      player_id: user.id,
-      card_number: i,
-      numbers: generateBingoCard(),
-    })
-  }
+  await insertCards(supabase, room.id, user.id, cardsPerPlayer)
 
   redirect(`/room/${code}`)
+}
+
+export async function restartRoom(roomId: string): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  const { data: room } = await supabase
+    .from('rooms')
+    .select('host_id, cards_per_player')
+    .eq('id', roomId)
+    .single()
+
+  if (!room || room.host_id !== user.id) return { error: 'Solo el host puede reiniciar' }
+
+  const { data: roomPlayers } = await supabase
+    .from('room_players')
+    .select('player_id')
+    .eq('room_id', roomId)
+
+  if (!roomPlayers) return { error: 'Error al obtener jugadores' }
+
+  // Limpiar datos de la partida anterior
+  await supabase.from('wins').delete().eq('room_id', roomId)
+  await supabase.from('drawn_numbers').delete().eq('room_id', roomId)
+  await supabase.from('bingo_cards').delete().eq('room_id', roomId)
+
+  // Generar cartones nuevos para todos los jugadores
+  for (const { player_id } of roomPlayers) {
+    await insertCards(supabase, roomId, player_id, room.cards_per_player)
+  }
+
+  // Volver a waiting — dispara el realtime para todos
+  await supabase.from('rooms').update({
+    status: 'waiting',
+    started_at: null,
+    finished_at: null,
+    current_prize: null,
+  }).eq('id', roomId)
+
+  return {}
 }
 
 export async function joinRoom(_: unknown, formData: FormData) {
@@ -74,15 +123,7 @@ export async function joinRoom(_: unknown, formData: FormData) {
 
   if (!existing) {
     await supabase.from('room_players').insert({ room_id: room.id, player_id: user.id })
-
-    for (let i = 1; i <= room.cards_per_player; i++) {
-      await supabase.from('bingo_cards').insert({
-        room_id: room.id,
-        player_id: user.id,
-        card_number: i,
-        numbers: generateBingoCard(),
-      })
-    }
+    await insertCards(supabase, room.id, user.id, room.cards_per_player)
   }
 
   redirect(`/room/${code}`)

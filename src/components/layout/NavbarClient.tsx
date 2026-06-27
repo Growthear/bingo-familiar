@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import Image from 'next/image'
 import { MenuIcon, XIcon } from 'lucide-react'
@@ -66,20 +67,20 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
         <MenuIcon size={22} />
       </button>
 
-      {/* ── Mobile slide panel ──────────────────────────────────────────── */}
-      {open && (
+      {/* ── Mobile drawer — portaled to body to evitar stacking context ─── */}
+      {open && createPortal(
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/40 z-50"
+            className="fixed inset-0 bg-black/40 z-[200]"
             onClick={() => setOpen(false)}
           />
 
-          {/* Panel */}
-          <div className="fixed top-0 right-0 h-full w-72 bg-white z-50 shadow-2xl flex flex-col">
+          {/* Slide panel desde la derecha */}
+          <div className="fixed top-0 right-0 h-full w-72 max-w-[85vw] bg-white z-[201] shadow-2xl flex flex-col">
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 h-14 border-b border-sky-100">
+            {/* Header del panel */}
+            <div className="flex items-center justify-between px-4 h-14 border-b border-sky-100 flex-shrink-0">
               <span className="font-black text-sky-700 text-base">🎱 Bingo Familiar</span>
               <button
                 onClick={() => setOpen(false)}
@@ -91,12 +92,12 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
 
             {/* User info */}
             {profile && (
-              <div className="px-4 py-4 border-b border-sky-50 flex items-center gap-3">
-                <Avatar className="h-10 w-10 ring-2 ring-sky-200">
+              <div className="px-4 py-4 border-b border-sky-50 flex items-center gap-3 flex-shrink-0">
+                <Avatar className="h-10 w-10 ring-2 ring-sky-200 flex-shrink-0">
                   {avatarContent}
                 </Avatar>
-                <div>
-                  <p className="font-semibold text-sm text-gray-800">{profile.username}</p>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm text-gray-800 truncate">{profile.username}</p>
                   <p className="text-xs text-muted-foreground">Jugador</p>
                 </div>
               </div>
@@ -109,7 +110,7 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100"
               >
-                <span className="text-xl">🏆</span> Ranking
+                <span className="text-xl w-7 text-center">🏆</span> Ranking
               </Link>
 
               {profile && (
@@ -118,13 +119,15 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100"
                 >
-                  <span className="text-xl">👤</span> Mi perfil
+                  <span className="text-xl w-7 text-center">👤</span> Mi perfil
                 </Link>
               )}
 
-              <div className="h-px bg-sky-50 my-2" />
+              <div className="h-px bg-sky-100 my-2" />
 
-              <p className="px-3 text-[10px] font-bold text-sky-400 uppercase tracking-wider mb-1">Redes sociales</p>
+              <p className="px-3 text-[10px] font-bold text-sky-400 uppercase tracking-wider mb-1">
+                Redes sociales
+              </p>
 
               <a
                 href={INSTAGRAM_URL}
@@ -132,7 +135,7 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100"
               >
-                <span className="text-xl">📸</span> Instagram
+                <span className="text-xl w-7 text-center">📸</span> Instagram
               </a>
 
               <a
@@ -141,7 +144,7 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100"
               >
-                <span className="text-xl">📘</span> Facebook
+                <span className="text-xl w-7 text-center">📘</span> Facebook
               </a>
 
               <a
@@ -150,13 +153,13 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100"
               >
-                <span className="text-xl">💬</span> WhatsApp
+                <span className="text-xl w-7 text-center">💬</span> WhatsApp
               </a>
             </nav>
 
             {/* Logout */}
             {profile && (
-              <div className="px-4 pb-8 pt-2 border-t border-sky-50">
+              <div className="px-4 pb-8 pt-2 border-t border-sky-50 flex-shrink-0">
                 <form action={logout}>
                   <Button
                     variant="ghost"
@@ -169,7 +172,8 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
               </div>
             )}
           </div>
-        </>
+        </>,
+        document.body
       )}
     </>
   )

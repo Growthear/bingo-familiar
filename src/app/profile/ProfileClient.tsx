@@ -31,6 +31,9 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
   const [newUsername, setNewUsername] = useState(initialProfile.username)
   const [savingUsername, startSavingUsername] = useTransition()
 
+  const [mpAlias, setMpAlias] = useState(initialProfile.mp_alias ?? '')
+  const [savingAlias, startSavingAlias] = useTransition()
+
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [savingPassword, startSavingPassword] = useTransition()
@@ -116,6 +119,34 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
       } else {
         setProfile(prev => ({ ...prev, username: trimmed }))
         toast.success('¡Nombre actualizado!')
+      }
+    })
+  }
+
+  // ── Alias Mercado Pago ────────────────────────────────────────────────────
+  const saveAlias = () => {
+    const trimmed = mpAlias.trim()
+    if (trimmed === (profile.mp_alias ?? '')) return
+
+    startSavingAlias(async () => {
+      if (trimmed.length > 0 && !/^[\w.\-]+$/.test(trimmed)) {
+        toast.error('Alias inválido: solo letras, números, puntos, guiones y guiones bajos')
+        return
+      }
+      if (trimmed.length > 22) {
+        toast.error('El alias no puede tener más de 22 caracteres')
+        return
+      }
+      const { error } = await supabase
+        .from('profiles')
+        .update({ mp_alias: trimmed || null })
+        .eq('id', profile.id)
+
+      if (error) {
+        toast.error('No se pudo guardar el alias')
+      } else {
+        setProfile(prev => ({ ...prev, mp_alias: trimmed || null }))
+        toast.success('¡Alias guardado!')
       }
     })
   }
@@ -243,6 +274,36 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
             className="w-full bg-sky-500 hover:bg-sky-600"
           >
             {savingUsername ? 'Guardando...' : 'Guardar nombre'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Alias Mercado Pago ─────────────────────────────────────────── */}
+      <Card className="border-sky-200">
+        <CardHeader className="pb-3 pt-4">
+          <CardTitle className="text-base text-sky-700">💳 Alias Mercado Pago</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Guardá tu alias para que el host pueda transferirte los premios sin tener que pedírtelo.
+          </p>
+          <div className="space-y-1.5">
+            <Label htmlFor="mp-alias">Alias</Label>
+            <Input
+              id="mp-alias"
+              value={mpAlias}
+              onChange={e => setMpAlias(e.target.value)}
+              maxLength={22}
+              className="border-sky-300"
+              placeholder="ej: juan.rodriguez.mp"
+            />
+          </div>
+          <Button
+            onClick={saveAlias}
+            disabled={savingAlias || mpAlias.trim() === (profile.mp_alias ?? '')}
+            className="w-full bg-sky-500 hover:bg-sky-600"
+          >
+            {savingAlias ? 'Guardando...' : 'Guardar alias'}
           </Button>
         </CardContent>
       </Card>

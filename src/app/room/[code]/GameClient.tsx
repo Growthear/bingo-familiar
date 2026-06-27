@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { restartRoom } from '@/app/actions'
 
 interface GameClientProps {
   room: Room
@@ -59,6 +60,9 @@ export default function GameClient({
   const [historyOpen, setHistoryOpen] = useState(false)
   const [claimingPrize, setClaimingPrize] = useState(false)
   const [celebratingWin, setCelebratingWin] = useState<{ prize: PrizeType; amount: number } | null>(null)
+  const [pozOpen, setPozOpen] = useState(false)
+  const [playersOpen, setPlayersOpen] = useState(false)
+  const [restarting, setRestarting] = useState(false)
   const drawIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Refs to avoid stale closures in realtime handlers
@@ -230,9 +234,14 @@ export default function GameClient({
               const winner = players.find(p => p.id === w.player_id)
               const prizeAmount = prizes[w.prize_type as PrizeType]
               return (
-                <div key={w.id} className="flex justify-between items-center text-sm py-1">
-                  <span className="font-semibold">{winner?.username ?? 'Jugador'}</span>
-                  <div className="flex items-center gap-2">
+                <div key={w.id} className="flex justify-between items-start text-sm py-1 gap-2">
+                  <div>
+                    <p className="font-semibold">{winner?.username ?? 'Jugador'}</p>
+                    {isHost && winner?.mp_alias && (
+                      <p className="text-[11px] text-muted-foreground">💳 {winner.mp_alias}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {totalPot > 0 && (
                       <span className="text-green-700 font-bold text-xs">{formatMoney(prizeAmount)}</span>
                     )}
@@ -245,14 +254,48 @@ export default function GameClient({
               <p className="text-muted-foreground text-sm">Sin premios registrados</p>
             )}
           </div>
-          <div className="flex gap-2">
-            <Link href="/" className="flex-1">
-              <Button variant="outline" className="w-full border-sky-300 text-sky-700">Inicio</Button>
-            </Link>
-            <Link href="/ranking" className="flex-1">
-              <Button className="w-full bg-sky-500 hover:bg-sky-600">Ver ranking</Button>
-            </Link>
-          </div>
+          {isHost ? (
+            <div className="flex flex-col gap-2">
+              <Button
+                className="w-full bg-sky-500 hover:bg-sky-600 font-black text-base h-12"
+                disabled={restarting}
+                onClick={async () => {
+                  setRestarting(true)
+                  const result = await restartRoom(room.id)
+                  if (result.error) {
+                    toast.error(result.error)
+                    setRestarting(false)
+                  }
+                  // Si sale bien, el realtime lleva a todos al waiting room
+                }}
+              >
+                {restarting ? 'Preparando...' : '🔄 Jugar de nuevo'}
+              </Button>
+              <div className="flex gap-2">
+                <Link href="/" className="flex-1">
+                  <Button variant="outline" className="w-full border-sky-300 text-sky-700">Inicio</Button>
+                </Link>
+                <Link href="/ranking" className="flex-1">
+                  <Button variant="outline" className="w-full border-sky-300 text-sky-700">Ranking</Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <div className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 text-center">
+                <p className="text-sm font-medium text-sky-700">⏳ El host puede iniciar otra partida</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Si reinicia, volvés a la sala automáticamente</p>
+              </div>
+              <div className="flex gap-2">
+                <Link href="/" className="flex-1">
+                  <Button variant="outline" className="w-full border-sky-300 text-sky-700">Inicio</Button>
+                </Link>
+                <Link href="/ranking" className="flex-1">
+                  <Button variant="outline" className="w-full border-sky-300 text-sky-700">Ranking</Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -265,7 +308,25 @@ export default function GameClient({
       {/* Sticky header */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-sm border-b border-sky-200">
         <div className="max-w-lg mx-auto px-3 h-11 flex items-center justify-between gap-2">
-          <span className="font-black text-sky-700 text-sm tracking-wider">🇦🇷 {room.code}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-black text-sky-700 text-sm tracking-wider">🇦🇷 {room.code}</span>
+            <button
+              onClick={() => setPlayersOpen(true)}
+              className="flex items-center gap-1 bg-sky-100 hover:bg-sky-200 active:scale-95 transition-all rounded-lg px-2 py-0.5"
+            >
+              <span className="text-sm">👥</span>
+              <span className="text-[11px] font-bold text-sky-700">{players.length}</span>
+            </button>
+            {totalPot > 0 && (
+              <button
+                onClick={() => setPozOpen(true)}
+                className="flex items-center gap-1 bg-amber-100 hover:bg-amber-200 active:scale-95 transition-all rounded-lg px-2 py-0.5"
+              >
+                <span className="text-sm">🏆</span>
+                <span className="text-[11px] font-bold text-amber-700">{formatMoney(totalPot)}</span>
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-1.5">
             {room.status === 'paused' && (
               <Badge className="bg-amber-400 text-amber-900 text-[10px] px-1.5 py-0">⏸ PAUSA</Badge>
@@ -340,38 +401,6 @@ export default function GameClient({
           📋 Ver {drawnNumbers.length} número{drawnNumbers.length !== 1 ? 's' : ''} salidos
         </Button>
 
-        {/* Pozo */}
-        {totalPot > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-            <p className="text-[11px] font-bold text-amber-700 uppercase tracking-wider mb-2">
-              💰 Pozo — {formatMoney(totalPot)}
-            </p>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              {(['terno', 'linea', 'bingo'] as const).map((prize) => {
-                const winner = wins.find(w => w.prize_type === prize)
-                const winnerName = winner
-                  ? (players.find(p => p.id === winner.player_id)?.username ?? '?')
-                  : null
-                return (
-                  <div
-                    key={prize}
-                    className={`rounded-lg p-2 border ${winner ? 'bg-green-50 border-green-200' : 'bg-white border-amber-100'}`}
-                  >
-                    <p className="text-[10px] font-bold text-amber-700 uppercase">
-                      {PRIZE_LABELS[prize]}
-                    </p>
-                    <p className="text-xs font-black text-amber-900">{formatMoney(prizes[prize])}</p>
-                    {winnerName
-                      ? <p className="text-[9px] text-green-700 font-semibold truncate">✓ {winnerName}</p>
-                      : <p className="text-[9px] text-muted-foreground">{prize === 'bingo' ? '60%' : prize === 'linea' ? '30%' : '10%'}</p>
-                    }
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Cards stacked vertically */}
         <div className="flex flex-col gap-5">
           {cards.map((card, i) => (
@@ -422,6 +451,79 @@ export default function GameClient({
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
       />
+
+      {/* ── Modal de jugadores ───────────────────────────────────────────── */}
+      <Dialog open={playersOpen} onOpenChange={setPlayersOpen}>
+        <DialogContent showCloseButton={true}>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-sky-700">
+              👥 Jugadores ({players.length})
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5 pt-1 max-h-72 overflow-y-auto">
+            {players.map(p => (
+              <div key={p.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-sky-50">
+                <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-black text-sky-700">
+                    {p.username.slice(0, 2).toUpperCase()}
+                  </span>
+                </div>
+                  <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{p.username}</p>
+                  {isHost && p.mp_alias && (
+                    <p className="text-[11px] text-muted-foreground">💳 {p.mp_alias}</p>
+                  )}
+                </div>
+                {p.id === room.host_id && (
+                  <span className="text-[10px] font-bold bg-sky-100 text-sky-600 px-2 py-0.5 rounded-full flex-shrink-0">
+                    Host
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal del pozo ───────────────────────────────────────────────── */}
+      <Dialog open={pozOpen} onOpenChange={setPozOpen}>
+        <DialogContent showCloseButton={true}>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-amber-700 flex items-center gap-2">
+              🏆 Pozo acumulado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-1">
+            <p className="text-3xl font-black text-center text-amber-700">{formatMoney(totalPot)}</p>
+            <p className="text-xs text-center text-muted-foreground">
+              {players.length} jugador{players.length !== 1 ? 'es' : ''} × {room.cards_per_player} cartón{room.cards_per_player !== 1 ? 'es' : ''} × {formatMoney(room.price_per_card)}
+            </p>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {(['terno', 'linea', 'bingo'] as const).map((prize) => {
+                const winner = wins.find(w => w.prize_type === prize)
+                const winnerName = winner
+                  ? (players.find(p => p.id === winner.player_id)?.username ?? '?')
+                  : null
+                return (
+                  <div
+                    key={prize}
+                    className={`rounded-xl p-3 border ${winner ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-100'}`}
+                  >
+                    <p className="text-[11px] font-bold text-amber-700 uppercase mb-1">{PRIZE_LABELS[prize]}</p>
+                    <p className="text-sm font-black text-amber-900">{formatMoney(prizes[prize])}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {prize === 'bingo' ? '60%' : prize === 'linea' ? '30%' : '10%'}
+                    </p>
+                    {winnerName && (
+                      <p className="text-[10px] text-green-700 font-bold mt-1 truncate">✓ {winnerName}</p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Celebration modal ─────────────────────────────────────────────── */}
       <Dialog

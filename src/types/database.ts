@@ -11,18 +11,21 @@ export type Database = {
           id: string
           username: string
           avatar_url: string | null
+          mp_alias: string | null
           created_at: string
         }
         Insert: {
           id: string
           username: string
           avatar_url?: string | null
+          mp_alias?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           username?: string
           avatar_url?: string | null
+          mp_alias?: string | null
         }
         Relationships: []
       }
