@@ -18,6 +18,7 @@ export default function HomeClient() {
   const [pricePerCard, setPricePerCard] = useState('')
   const [ternoEnabled, setTernoEnabled] = useState(true)
   const [lineaEnabled, setLineaEnabled] = useState(true)
+  const [sharedPrizes, setSharedPrizes] = useState(false)
 
   const handleInterval = (v: string | null) => { if (v) setIntervalSeconds(v) }
   const handleCards = (v: string | null) => { if (v) setCardsPerPlayer(v) }
@@ -174,6 +175,20 @@ export default function HomeClient() {
 
               <div className="flex items-center justify-between py-2 border border-sky-100 rounded-xl px-3 bg-sky-50">
                 <div>
+                  <p className="text-sm font-medium text-sky-800">Premio compartido</p>
+                  <p className="text-xs text-muted-foreground">Si dos personas ganan con el mismo número, se reparte el pozo. Si no, gana el primero que aprieta.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSharedPrizes(v => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ml-3 ${sharedPrizes ? 'bg-sky-500' : 'bg-gray-200'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow ${sharedPrizes ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between py-2 border border-sky-100 rounded-xl px-3 bg-sky-50">
+                <div>
                   <p className="text-sm font-medium text-sky-800">Mostrar números salidos en cartón</p>
                   <p className="text-xs text-muted-foreground">Los jugadores ven qué números ya salieron aunque no los hayan marcado</p>
                 </div>
@@ -190,6 +205,7 @@ export default function HomeClient() {
               <input type="hidden" name="show_drawn" value={showDrawn ? '1' : '0'} />
               <input type="hidden" name="terno_enabled" value={ternoEnabled ? '1' : '0'} />
               <input type="hidden" name="linea_enabled" value={lineaEnabled ? '1' : '0'} />
+              <input type="hidden" name="shared_prizes" value={sharedPrizes ? '1' : '0'} />
               <Button
                 className="w-full h-12 text-base bg-sky-500 hover:bg-sky-600 font-bold"
                 type="submit"

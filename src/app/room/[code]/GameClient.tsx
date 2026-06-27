@@ -80,11 +80,19 @@ export default function GameClient({
   const drawnSet = new Set(drawnNumbers)
   const currentNumber = drawnNumbers[drawnNumbers.length - 1] ?? null
 
-  // Current user's wins
   const myWins = wins.filter(w => w.player_id === currentUser.id)
   const wonPrizes = new Set(myWins.map(w => w.prize_type))
-  // All prizes claimed by anyone in the room
-  const claimedPrizes = new Set(wins.map(w => w.prize_type))
+
+  // In shared mode: prize is locked only if you already won it, OR the window closed (a new number dropped since first claim)
+  // In único mode: prize is locked as soon as anyone claims it
+  const isPrizeLocked = (prize: PrizeType): boolean => {
+    if (wonPrizes.has(prize)) return true
+    if (!room.shared_prizes) return wins.some(w => w.prize_type === prize)
+    const firstWin = wins.find(w => w.prize_type === prize)
+    if (!firstWin) return false
+    return drawnNumbers.length > (firstWin.draw_order_at_claim ?? 0)
+  }
+  const claimedPrizes = new Set((['terno', 'linea', 'bingo'] as PrizeType[]).filter(isPrizeLocked))
 
   const totalPot = room.price_per_card > 0
     ? players.length * room.cards_per_player * room.price_per_card
@@ -464,6 +472,9 @@ export default function GameClient({
                 disabled={claimingPrize}
                 ternoEnabled={room.terno_enabled}
                 lineaEnabled={room.linea_enabled}
+                sharedPrizes={room.shared_prizes}
+                wins={wins}
+                drawnCount={drawnNumbers.length}
               />
             </div>
           ))}
@@ -657,6 +668,9 @@ function PrizeButtons({
   disabled,
   ternoEnabled,
   lineaEnabled,
+  sharedPrizes,
+  wins,
+  drawnCount,
 }: {
   card: BingoCard
   onClaim: (card: BingoCard, prize: 'terno' | 'linea' | 'bingo') => void
@@ -665,6 +679,9 @@ function PrizeButtons({
   disabled: boolean
   ternoEnabled: boolean
   lineaEnabled: boolean
+  sharedPrizes: boolean
+  wins: import('@/types/database').Win[]
+  drawnCount: number
 }) {
   const activePrizes = (['terno', 'linea', 'bingo'] as const).filter(p =>
     p === 'bingo' || (p === 'terno' && ternoEnabled) || (p === 'linea' && lineaEnabled)
@@ -673,17 +690,23 @@ function PrizeButtons({
     <div className={`grid gap-2 ${activePrizes.length === 1 ? 'grid-cols-1' : activePrizes.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
       {activePrizes.map((prize) => {
         const iWon = wonPrizes.has(prize)
-        const someoneWon = claimedPrizes.has(prize) && !iWon
-        const isDisabled = disabled || claimedPrizes.has(prize)
+        const firstWin = wins.find(w => w.prize_type === prize)
+        const windowOpen = sharedPrizes && firstWin && drawnCount === (firstWin.draw_order_at_claim ?? 0)
+        const someoneWon = claimedPrizes.has(prize) && !iWon && !windowOpen
+        const isDisabled = disabled || (iWon ? true : someoneWon)
 
         const label = iWon
           ? `✓ ${PRIZE_LABELS[prize]}`
+          : windowOpen
+          ? `¡También! 🤝`
           : someoneWon
           ? 'Ya cantado'
           : `¡${PRIZE_LABELS[prize].toUpperCase()}!${prize === 'bingo' ? ' 🎱' : ''}`
 
         const style = iWon
           ? 'bg-green-100 text-green-700 border-2 border-green-300'
+          : windowOpen
+          ? 'bg-purple-500 text-white shadow-lg shadow-purple-200 hover:bg-purple-600 active:shadow-none animate-pulse'
           : someoneWon
           ? 'bg-gray-100 text-gray-400 border border-gray-200 line-through'
           : prize === 'bingo'
