@@ -142,7 +142,7 @@ export default function GameClient({
           vibrate('win')
           playSound(win.prize_type === 'bingo' ? 'win' : 'success')
           const pot = playersRef.current.length * initialRoom.cards_per_player * initialRoom.price_per_card
-          const p = calcPrizes(pot)
+          const p = calcPrizes(pot, initialRoom.terno_enabled, initialRoom.linea_enabled)
           const amount = p[win.prize_type as PrizeType]
           setCelebratingWin({ prize: win.prize_type as PrizeType, amount })
         }
