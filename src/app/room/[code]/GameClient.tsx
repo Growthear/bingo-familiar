@@ -114,6 +114,13 @@ export default function GameClient({
         if (data) setPlayers(data)
       })
       .on('postgres_changes', {
+        event: 'DELETE', schema: 'public', table: 'room_players',
+        filter: `room_id=eq.${room.id}`,
+      }, (payload) => {
+        const leftId = (payload.old as { player_id: string }).player_id
+        setPlayers(prev => prev.filter(p => p.id !== leftId))
+      })
+      .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'wins',
         filter: `room_id=eq.${room.id}`,
       }, (payload) => {

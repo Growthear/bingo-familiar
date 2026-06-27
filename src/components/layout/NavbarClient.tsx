@@ -161,6 +161,14 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
             {/* Nav links */}
             <nav className="flex-1 flex flex-col px-3 py-3 gap-0.5 overflow-y-auto">
               <Link
+                href="/"
+                onClick={closeMenu}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100 transition-colors"
+              >
+                <span className="text-xl w-7 text-center">🏠</span> Inicio
+              </Link>
+
+              <Link
                 href="/ranking"
                 onClick={closeMenu}
                 className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100 transition-colors"
@@ -177,6 +185,22 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
                   <span className="text-xl w-7 text-center">👤</span> Mi perfil
                 </Link>
               )}
+
+              <Link
+                href="/como-jugar"
+                onClick={closeMenu}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100 transition-colors"
+              >
+                <span className="text-xl w-7 text-center">❓</span> Cómo jugar
+              </Link>
+
+              <Link
+                href="/politicas"
+                onClick={closeMenu}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100 transition-colors"
+              >
+                <span className="text-xl w-7 text-center">📋</span> Políticas y privacidad
+              </Link>
             </nav>
 
             {/* Redes sociales + logout — siempre al fondo */}

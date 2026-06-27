@@ -1,6 +1,16 @@
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/layout/Navbar'
 import RankingClient from './RankingClient'
+
+export const metadata: Metadata = {
+  title: 'Ranking',
+  description: 'Tabla de posiciones de Bingo Familiar. ¿Quién tiene más bingos, líneas y ternos? Mirá el ranking y desafiá a tu familia.',
+  openGraph: {
+    title: '🏆 Ranking — Bingo Familiar',
+    description: '¿Quién es el mejor jugador de la familia? Mirá la tabla de posiciones.',
+  },
+}
 
 export default async function RankingPage() {
   const supabase = await createClient()

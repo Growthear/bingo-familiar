@@ -28,6 +28,9 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
   const [interval, setInterval] = useState(String(room.interval_seconds))
   const [isPending, startTransition] = useTransition()
   const [isCancelling, startCancelling] = useTransition()
+  const [isLeaving, startLeaving] = useTransition()
+  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
   const supabase = createClient()
 
   const handleInterval = (v: string | null) => { if (v) setInterval(v) }
@@ -44,7 +47,6 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
   }
 
   const cancelRoom = () => {
-    if (!confirm('¿Cancelar la sala? Todos los jugadores serán desconectados.')) return
     startCancelling(async () => {
       const { error } = await supabase
         .from('rooms')
@@ -52,6 +54,22 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
         .eq('id', room.id)
       if (error) {
         toast.error('No se pudo cancelar la sala')
+        setConfirmCancel(false)
+      } else {
+        router.push('/')
+      }
+    })
+  }
+
+  const leaveRoom = () => {
+    startLeaving(async () => {
+      await supabase.from('bingo_cards').delete()
+        .eq('room_id', room.id).eq('player_id', currentUserId)
+      const { error } = await supabase.from('room_players').delete()
+        .eq('room_id', room.id).eq('player_id', currentUserId)
+      if (error) {
+        toast.error('No se pudo abandonar la sala')
+        setConfirmLeave(false)
       } else {
         router.push('/')
       }
@@ -122,6 +140,24 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
         </CardContent>
       </Card>
 
+      {/* Alias del host para pagar */}
+      {room.price_per_card > 0 && (() => {
+        const hostProfile = players.find(p => p.id === room.host_id)
+        if (!hostProfile?.mp_alias) return null
+        return (
+          <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+            <span className="text-2xl flex-shrink-0">💳</span>
+            <div>
+              <p className="text-xs text-green-700 font-semibold">Alias Mercado Pago del host</p>
+              <p className="font-black text-green-800 text-base tracking-wide">{hostProfile.mp_alias}</p>
+              <p className="text-[11px] text-green-600 mt-0.5">
+                Transferile {formatMoney(room.price_per_card)} por cartón a <strong>{hostProfile.username}</strong>
+              </p>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Pozo */}
       {room.price_per_card > 0 && (
         <Card className="border-amber-200 bg-amber-50">
@@ -158,6 +194,7 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
         </Card>
       )}
 
+      {/* Controles del host */}
       {isHost && (
         <Card className="border-sky-200">
           <CardHeader className="pb-3">
@@ -187,22 +224,83 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
             >
               {isPending ? 'Iniciando...' : '¡Iniciar partida! 🎱'}
             </Button>
-            <Button
-              variant="outline"
-              className="w-full border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300"
-              onClick={cancelRoom}
-              disabled={isPending || isCancelling}
-            >
-              {isCancelling ? 'Cancelando...' : 'Cancelar sala'}
-            </Button>
+
+            {/* Cancelar sala — confirmación inline */}
+            {!confirmCancel ? (
+              <Button
+                variant="outline"
+                className="w-full border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300"
+                onClick={() => setConfirmCancel(true)}
+                disabled={isPending || isCancelling}
+              >
+                Cancelar sala
+              </Button>
+            ) : (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 space-y-2">
+                <p className="text-sm font-semibold text-red-700 text-center">¿Cancelar la sala?</p>
+                <p className="text-xs text-red-500 text-center">Todos los jugadores serán desconectados.</p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setConfirmCancel(false)}
+                    disabled={isCancelling}
+                  >
+                    No, volver
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                    onClick={cancelRoom}
+                    disabled={isCancelling}
+                  >
+                    {isCancelling ? 'Cancelando...' : 'Sí, cancelar'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
+      {/* Jugador esperando — con opción de abandonar */}
       {!isHost && (
-        <div className="text-center py-6">
-          <div className="text-3xl mb-2 animate-pulse">⏳</div>
+        <div className="text-center py-4 space-y-4">
+          <div className="text-3xl animate-pulse">⏳</div>
           <p className="text-muted-foreground">Esperando a que el host inicie la partida...</p>
+
+          {!confirmLeave ? (
+            <button
+              onClick={() => setConfirmLeave(true)}
+              className="text-sm text-muted-foreground underline underline-offset-2 hover:text-red-500 transition-colors"
+            >
+              Abandonar sala
+            </button>
+          ) : (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 space-y-2 text-left">
+              <p className="text-sm font-semibold text-red-700 text-center">¿Abandonar la sala?</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setConfirmLeave(false)}
+                  disabled={isLeaving}
+                >
+                  Quedarme
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                  onClick={leaveRoom}
+                  disabled={isLeaving}
+                >
+                  {isLeaving ? 'Saliendo...' : 'Sí, salir'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
