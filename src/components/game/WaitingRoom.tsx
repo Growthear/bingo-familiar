@@ -37,8 +37,10 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
 
   const totalCards = players.length * room.cards_per_player
   const totalPot = totalCards * room.price_per_card
-  const ternoPrize = Math.floor(totalPot * 0.10)
-  const lineaPrize = Math.floor(totalPot * 0.30)
+  const noTerno = !room.terno_enabled
+  const noLinea = !room.linea_enabled
+  const ternoPrize = noTerno ? 0 : Math.floor(totalPot * (noLinea ? 0.20 : 0.10))
+  const lineaPrize = noLinea ? 0 : Math.floor(totalPot * (noTerno ? 0.20 : 0.30))
   const bingoPrize = totalPot - ternoPrize - lineaPrize
 
   const copyCode = () => {
@@ -176,23 +178,29 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
                 {players.length} jugador{players.length !== 1 ? 'es' : ''} × {room.cards_per_player} cartón{room.cards_per_player !== 1 ? 'es' : ''} × {formatMoney(room.price_per_card)}
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-white rounded-xl p-2 border border-amber-200">
-                <p className="text-[10px] font-bold text-amber-600 uppercase">Terno</p>
-                <p className="text-sm font-black text-amber-800">{formatMoney(ternoPrize)}</p>
-                <p className="text-[10px] text-muted-foreground">10%</p>
-              </div>
-              <div className="bg-white rounded-xl p-2 border border-amber-200">
-                <p className="text-[10px] font-bold text-amber-600 uppercase">Línea</p>
-                <p className="text-sm font-black text-amber-800">{formatMoney(lineaPrize)}</p>
-                <p className="text-[10px] text-muted-foreground">30%</p>
-              </div>
-              <div className="bg-white rounded-xl p-2 border border-amber-200">
-                <p className="text-[10px] font-bold text-amber-600 uppercase">Bingo</p>
-                <p className="text-sm font-black text-amber-800">{formatMoney(bingoPrize)}</p>
-                <p className="text-[10px] text-muted-foreground">60%</p>
-              </div>
-            </div>
+            {(() => {
+              const enabled = room.terno_enabled && room.linea_enabled
+              const noTerno = !room.terno_enabled && room.linea_enabled
+              const noLinea = room.terno_enabled && !room.linea_enabled
+              const onlyBingo = !room.terno_enabled && !room.linea_enabled
+              const prizes = [
+                room.terno_enabled && { label: 'Terno', amount: ternoPrize, pct: noLinea ? '20%' : '10%' },
+                room.linea_enabled && { label: 'Línea', amount: lineaPrize, pct: noTerno ? '20%' : '30%' },
+                { label: 'Bingo', amount: bingoPrize, pct: onlyBingo ? '100%' : noTerno || noLinea ? '80%' : '60%' },
+              ].filter(Boolean) as { label: string; amount: number; pct: string }[]
+              void enabled
+              return (
+                <div className={`grid gap-2 text-center ${prizes.length === 1 ? 'grid-cols-1' : prizes.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                  {prizes.map(({ label, amount, pct }) => (
+                    <div key={label} className="bg-white rounded-xl p-2 border border-amber-200">
+                      <p className="text-[10px] font-bold text-amber-600 uppercase">{label}</p>
+                      <p className="text-sm font-black text-amber-800">{formatMoney(amount)}</p>
+                      <p className="text-[10px] text-muted-foreground">{pct}</p>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
           </CardContent>
         </Card>
       )}

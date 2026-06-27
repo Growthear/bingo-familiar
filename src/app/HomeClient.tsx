@@ -16,6 +16,8 @@ export default function HomeClient() {
   const [cardsPerPlayer, setCardsPerPlayer] = useState('1')
   const [showDrawn, setShowDrawn] = useState(false)
   const [pricePerCard, setPricePerCard] = useState('')
+  const [ternoEnabled, setTernoEnabled] = useState(true)
+  const [lineaEnabled, setLineaEnabled] = useState(true)
 
   const handleInterval = (v: string | null) => { if (v) setIntervalSeconds(v) }
   const handleCards = (v: string | null) => { if (v) setCardsPerPlayer(v) }
@@ -139,6 +141,37 @@ export default function HomeClient() {
                   </p>
                 )}
               </div>
+              <div className="space-y-1.5">
+                <Label>Premios habilitados</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { key: 'terno', label: '🎉 Terno', enabled: ternoEnabled, toggle: () => setTernoEnabled(v => !v), locked: false },
+                    { key: 'linea', label: '🎯 Línea', enabled: lineaEnabled, toggle: () => setLineaEnabled(v => !v), locked: false },
+                    { key: 'bingo', label: '🎱 Bingo', enabled: true, toggle: () => {}, locked: true },
+                  ].map(({ key, label, enabled, toggle, locked }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={toggle}
+                      disabled={locked}
+                      className={`py-2 px-1 rounded-xl border-2 text-sm font-bold transition-all ${
+                        enabled
+                          ? 'border-sky-400 bg-sky-50 text-sky-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-400 line-through'
+                      } ${locked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {!ternoEnabled && !lineaEnabled ? 'Bingo: 100% del pozo' :
+                   !ternoEnabled ? 'Línea: 20% · Bingo: 80%' :
+                   !lineaEnabled ? 'Terno: 20% · Bingo: 80%' :
+                   'Terno: 10% · Línea: 30% · Bingo: 60%'}
+                </p>
+              </div>
+
               <div className="flex items-center justify-between py-2 border border-sky-100 rounded-xl px-3 bg-sky-50">
                 <div>
                   <p className="text-sm font-medium text-sky-800">Mostrar números salidos en cartón</p>
@@ -155,6 +188,8 @@ export default function HomeClient() {
               <input type="hidden" name="interval_seconds" value={intervalSeconds} />
               <input type="hidden" name="cards_per_player" value={cardsPerPlayer} />
               <input type="hidden" name="show_drawn" value={showDrawn ? '1' : '0'} />
+              <input type="hidden" name="terno_enabled" value={ternoEnabled ? '1' : '0'} />
+              <input type="hidden" name="linea_enabled" value={lineaEnabled ? '1' : '0'} />
               <Button
                 className="w-full h-12 text-base bg-sky-500 hover:bg-sky-600 font-bold"
                 type="submit"

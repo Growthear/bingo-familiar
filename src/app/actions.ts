@@ -38,6 +38,8 @@ export async function createRoom(_: unknown, formData: FormData) {
   const cardsPerPlayer = Math.max(1, Math.min(6, parseInt(formData.get('cards_per_player') as string) || 1))
   const showDrawn = formData.get('show_drawn') === '1'
   const pricePerCard = Math.max(0, parseInt(formData.get('price_per_card') as string) || 0)
+  const ternoEnabled = formData.get('terno_enabled') !== '0'
+  const lineaEnabled = formData.get('linea_enabled') !== '0'
 
   let code = generateCode()
   for (let i = 0; i < 10; i++) {
@@ -48,7 +50,7 @@ export async function createRoom(_: unknown, formData: FormData) {
 
   const { data: room, error } = await supabase
     .from('rooms')
-    .insert({ code, host_id: user.id, interval_seconds: intervalSeconds, cards_per_player: cardsPerPlayer, show_drawn: showDrawn, price_per_card: pricePerCard })
+    .insert({ code, host_id: user.id, interval_seconds: intervalSeconds, cards_per_player: cardsPerPlayer, show_drawn: showDrawn, price_per_card: pricePerCard, terno_enabled: ternoEnabled, linea_enabled: lineaEnabled })
     .select()
     .single()
 

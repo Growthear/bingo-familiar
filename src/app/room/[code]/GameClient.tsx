@@ -36,11 +36,13 @@ function formatMoney(n: number) {
   return n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
 }
 
-function calcPrizes(pot: number) {
+function calcPrizes(pot: number, ternoEnabled: boolean, lineaEnabled: boolean) {
+  if (!ternoEnabled && !lineaEnabled) return { terno: 0, linea: 0, bingo: pot }
+  if (!ternoEnabled) { const l = Math.floor(pot * 0.20); return { terno: 0, linea: l, bingo: pot - l } }
+  if (!lineaEnabled) { const t = Math.floor(pot * 0.20); return { terno: t, linea: 0, bingo: pot - t } }
   const terno = Math.floor(pot * 0.10)
   const linea = Math.floor(pot * 0.30)
-  const bingo = pot - terno - linea
-  return { terno, linea, bingo }
+  return { terno, linea, bingo: pot - terno - linea }
 }
 
 export default function GameClient({
@@ -86,7 +88,7 @@ export default function GameClient({
   const totalPot = room.price_per_card > 0
     ? players.length * room.cards_per_player * room.price_per_card
     : 0
-  const prizes = calcPrizes(totalPot)
+  const prizes = calcPrizes(totalPot, room.terno_enabled, room.linea_enabled)
 
   // ── Real-time ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -379,21 +381,11 @@ export default function GameClient({
             {room.status === 'paused' && (
               <Badge className="bg-amber-400 text-amber-900 text-[10px] px-1.5 py-0">⏸ PAUSA</Badge>
             )}
-            {(['terno', 'linea', 'bingo'] as const).map(p => (
-              <Badge
-                key={p}
-                variant={wonPrizes.has(p) ? 'default' : 'outline'}
-                className={
-                  wonPrizes.has(p)
-                    ? 'bg-green-500 text-white border-transparent text-[10px] px-1.5 py-0'
-                    : claimedPrizes.has(p)
-                    ? 'text-[10px] px-1.5 py-0 border-gray-300 text-gray-400 line-through'
-                    : 'text-[10px] px-1.5 py-0 border-sky-300 text-sky-600'
-                }
-              >
-                {wonPrizes.has(p) ? '✓ ' : ''}{p}
+            {wonPrizes.size > 0 && (
+              <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0">
+                ✓ {[...wonPrizes].map(p => PRIZE_LABELS[p as PrizeType]).join(' · ')}
               </Badge>
-            ))}
+            )}
           </div>
         </div>
       </header>
@@ -469,6 +461,8 @@ export default function GameClient({
                 wonPrizes={wonPrizes}
                 claimedPrizes={claimedPrizes}
                 disabled={claimingPrize}
+                ternoEnabled={room.terno_enabled}
+                lineaEnabled={room.linea_enabled}
               />
             </div>
           ))}
@@ -621,16 +615,23 @@ function PrizeButtons({
   wonPrizes,
   claimedPrizes,
   disabled,
+  ternoEnabled,
+  lineaEnabled,
 }: {
   card: BingoCard
   onClaim: (card: BingoCard, prize: 'terno' | 'linea' | 'bingo') => void
   wonPrizes: Set<string>
   claimedPrizes: Set<string>
   disabled: boolean
+  ternoEnabled: boolean
+  lineaEnabled: boolean
 }) {
+  const activePrizes = (['terno', 'linea', 'bingo'] as const).filter(p =>
+    p === 'bingo' || (p === 'terno' && ternoEnabled) || (p === 'linea' && lineaEnabled)
+  )
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {(['terno', 'linea', 'bingo'] as const).map((prize) => {
+    <div className={`grid gap-2 ${activePrizes.length === 1 ? 'grid-cols-1' : activePrizes.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+      {activePrizes.map((prize) => {
         const iWon = wonPrizes.has(prize)
         const someoneWon = claimedPrizes.has(prize) && !iWon
         const isDisabled = disabled || claimedPrizes.has(prize)

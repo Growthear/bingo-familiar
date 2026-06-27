@@ -40,6 +40,8 @@ export type Database = {
           current_prize: PrizeType | null
           show_drawn: boolean
           price_per_card: number
+          terno_enabled: boolean
+          linea_enabled: boolean
           created_at: string
           started_at: string | null
           finished_at: string | null
@@ -54,6 +56,8 @@ export type Database = {
           current_prize?: PrizeType | null
           show_drawn?: boolean
           price_per_card?: number
+          terno_enabled?: boolean
+          linea_enabled?: boolean
           created_at?: string
           started_at?: string | null
           finished_at?: string | null
@@ -68,6 +72,8 @@ export type Database = {
           current_prize?: PrizeType | null
           show_drawn?: boolean
           price_per_card?: number
+          terno_enabled?: boolean
+          linea_enabled?: boolean
           started_at?: string | null
           finished_at?: string | null
         }
