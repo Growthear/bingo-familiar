@@ -349,7 +349,7 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
             <div>
               <p className="text-base font-black text-sky-700">🔊 Sonidos</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {soundOn ? 'Activados — chimes y fanfarrias al jugar' : 'Desactivados'}
+                {soundOn ? 'Activados — más diversión al jugar' : 'Desactivados'}
               </p>
             </div>
             <button
