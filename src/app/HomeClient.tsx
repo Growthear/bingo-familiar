@@ -95,7 +95,7 @@ export default function HomeClient() {
                   <SelectContent>
                     {[3, 5, 8, 10, 15, 20, 30].map(s => (
                       <SelectItem key={s} value={String(s)}>
-                        {s} segundos {s === 5 ? '(recomendado)' : ''}
+                        {s} segundos
                       </SelectItem>
                     ))}
                   </SelectContent>
