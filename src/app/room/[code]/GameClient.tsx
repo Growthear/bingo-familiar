@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Room, Profile, BingoCard, DrawnNumber, Win, BingoGrid, PrizeType } from '@/types/database'
 import { checkPrize, PRIZE_LABELS } from '@/lib/bingo/gameLogic'
@@ -49,6 +50,7 @@ export default function GameClient({
   initialWins,
 }: GameClientProps) {
   const supabase = createClient()
+  const router = useRouter()
 
   const [room, setRoom] = useState(initialRoom)
   const [players, setPlayers] = useState(initialPlayers)
@@ -202,6 +204,22 @@ export default function GameClient({
       finished_at: new Date().toISOString(),
     }).eq('id', room.id)
     if (error) toast.error('No se pudo finalizar')
+  }
+
+  // ── Cancelled ────────────────────────────────────────────────────────────
+  if (room.status === 'cancelled') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-sky-100 via-white to-sky-100 flex flex-col items-center justify-center p-4">
+        <div className="text-center space-y-3 max-w-sm w-full">
+          <div className="text-5xl">❌</div>
+          <h1 className="text-2xl font-black text-gray-700">Sala cancelada</h1>
+          <p className="text-muted-foreground text-sm">El host canceló la sala antes de iniciar la partida.</p>
+          <Button className="w-full bg-sky-500 hover:bg-sky-600 mt-2" onClick={() => router.push('/')}>
+            Volver al inicio
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   // ── Waiting ──────────────────────────────────────────────────────────────

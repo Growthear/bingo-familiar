@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Room, Profile } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,9 +23,11 @@ function formatMoney(n: number) {
 }
 
 export default function WaitingRoom({ room, players, currentUserId }: WaitingRoomProps) {
+  const router = useRouter()
   const isHost = currentUserId === room.host_id
   const [interval, setInterval] = useState(String(room.interval_seconds))
   const [isPending, startTransition] = useTransition()
+  const [isCancelling, startCancelling] = useTransition()
   const supabase = createClient()
 
   const handleInterval = (v: string | null) => { if (v) setInterval(v) }
@@ -38,6 +41,21 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
   const copyCode = () => {
     navigator.clipboard.writeText(room.code)
     toast.success('¡Código copiado!')
+  }
+
+  const cancelRoom = () => {
+    if (!confirm('¿Cancelar la sala? Todos los jugadores serán desconectados.')) return
+    startCancelling(async () => {
+      const { error } = await supabase
+        .from('rooms')
+        .update({ status: 'cancelled' })
+        .eq('id', room.id)
+      if (error) {
+        toast.error('No se pudo cancelar la sala')
+      } else {
+        router.push('/')
+      }
+    })
   }
 
   const startGame = () => {
@@ -165,9 +183,17 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
             <Button
               className="w-full bg-sky-500 hover:bg-sky-600 text-white font-black py-4 text-xl h-auto rounded-xl shadow-lg shadow-sky-200 active:scale-95 transition-all"
               onClick={startGame}
-              disabled={isPending || players.length < 1}
+              disabled={isPending || isCancelling || players.length < 1}
             >
               {isPending ? 'Iniciando...' : '¡Iniciar partida! 🎱'}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300"
+              onClick={cancelRoom}
+              disabled={isPending || isCancelling}
+            >
+              {isCancelling ? 'Cancelando...' : 'Cancelar sala'}
             </Button>
           </CardContent>
         </Card>

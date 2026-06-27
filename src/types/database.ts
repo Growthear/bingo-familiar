@@ -1,7 +1,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
 
 export type PrizeType = 'terno' | 'linea' | 'bingo'
-export type RoomStatus = 'waiting' | 'playing' | 'paused' | 'finished'
+export type RoomStatus = 'waiting' | 'playing' | 'paused' | 'finished' | 'cancelled'
 
 export type Database = {
   public: {

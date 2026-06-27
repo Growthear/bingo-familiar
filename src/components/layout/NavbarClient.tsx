@@ -13,9 +13,10 @@ interface NavbarClientProps {
   profile: { username: string; avatar_url: string | null } | null
 }
 
-const INSTAGRAM_URL = 'https://instagram.com/bingofamiliar'
-const FACEBOOK_URL = 'https://facebook.com/bingofamiliar'
-const X_URL = 'https://x.com/bingofamiliar'
+const INSTAGRAM_URL = 'https://instagram.com/augus_vidal'
+const FACEBOOK_URL = 'https://facebook.com/augus_vidal'
+const X_URL = 'https://x.com/augus_vidal'
+const TIKTOK_URL = 'https://tiktok.com/@augus_vidal'
 
 function IconInstagram({ className }: { className?: string }) {
   return (
@@ -43,6 +44,14 @@ function IconX({ className }: { className?: string }) {
   )
 }
 
+function IconTikTok({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.73a4.85 4.85 0 0 1-1.01-.04z" />
+    </svg>
+  )
+}
+
 export default function NavbarClient({ profile }: NavbarClientProps) {
   const [open, setOpen] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -57,7 +66,6 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
     setTimeout(() => setOpen(false), 300)
   }
 
-  // Cerrar con Escape
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') closeMenu() }
@@ -111,7 +119,7 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
         <MenuIcon size={22} />
       </button>
 
-      {/* ── Mobile drawer — portaled to body ────────────────────────────── */}
+      {/* ── Mobile drawer ────────────────────────────────────────────────── */}
       {open && createPortal(
         <>
           {/* Backdrop */}
@@ -126,7 +134,7 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
               transition-transform duration-300 ease-in-out
               ${visible ? 'translate-x-0' : '-translate-x-full'}`}
           >
-            {/* Header del panel */}
+            {/* Header */}
             <div className="flex items-center justify-between px-4 h-14 border-b border-sky-100 flex-shrink-0">
               <span className="font-black text-sky-700 text-base">🎱 Bingo Familiar</span>
               <button
@@ -169,58 +177,70 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
                   <span className="text-xl w-7 text-center">👤</span> Mi perfil
                 </Link>
               )}
-
-              <div className="h-px bg-sky-100 my-3" />
-
-              {/* Redes sociales — 3 íconos lado a lado */}
-              <p className="px-3 text-[10px] font-bold text-sky-400 uppercase tracking-wider mb-2">
-                Redes sociales
-              </p>
-              <div className="flex items-center gap-3 px-3">
-                <a
-                  href={INSTAGRAM_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Instagram"
-                  className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white hover:opacity-90 active:scale-95 transition-all shadow-sm"
-                >
-                  <IconInstagram className="w-5 h-5" />
-                </a>
-                <a
-                  href={FACEBOOK_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Facebook"
-                  className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#1877F2] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm"
-                >
-                  <IconFacebook className="w-5 h-5" />
-                </a>
-                <a
-                  href={X_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="X (Twitter)"
-                  className="flex items-center justify-center w-11 h-11 rounded-xl bg-black text-white hover:opacity-80 active:scale-95 transition-all shadow-sm"
-                >
-                  <IconX className="w-4 h-4" />
-                </a>
-              </div>
             </nav>
 
-            {/* Logout */}
-            {profile && (
-              <div className="px-4 pb-8 pt-2 border-t border-sky-50 flex-shrink-0">
-                <form action={logout}>
-                  <Button
-                    variant="ghost"
-                    type="submit"
-                    className="w-full text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+            {/* Redes sociales + logout — siempre al fondo */}
+            <div className="flex-shrink-0 border-t border-sky-50">
+              {/* Íconos de redes */}
+              <div className="px-4 pt-4 pb-3">
+                <p className="text-[10px] font-bold text-sky-400 uppercase tracking-wider mb-3">
+                  Redes sociales
+                </p>
+                <div className="flex items-center gap-2.5">
+                  <a
+                    href={INSTAGRAM_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Instagram"
+                    className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white hover:opacity-90 active:scale-95 transition-all shadow-sm"
                   >
-                    Cerrar sesión
-                  </Button>
-                </form>
+                    <IconInstagram className="w-4 h-4" />
+                  </a>
+                  <a
+                    href={FACEBOOK_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Facebook"
+                    className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#1877F2] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                  >
+                    <IconFacebook className="w-4 h-4" />
+                  </a>
+                  <a
+                    href={X_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="X (Twitter)"
+                    className="flex items-center justify-center w-9 h-9 rounded-xl bg-black text-white hover:opacity-80 active:scale-95 transition-all shadow-sm"
+                  >
+                    <IconX className="w-3.5 h-3.5" />
+                  </a>
+                  <a
+                    href={TIKTOK_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="TikTok"
+                    className="flex items-center justify-center w-9 h-9 rounded-xl bg-black text-white hover:opacity-80 active:scale-95 transition-all shadow-sm"
+                  >
+                    <IconTikTok className="w-4 h-4" />
+                  </a>
+                </div>
               </div>
-            )}
+
+              {/* Logout */}
+              {profile && (
+                <div className="px-4 pb-8 pt-1">
+                  <form action={logout}>
+                    <Button
+                      variant="ghost"
+                      type="submit"
+                      className="w-full text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Cerrar sesión
+                    </Button>
+                  </form>
+                </div>
+              )}
+            </div>
           </div>
         </>,
         document.body

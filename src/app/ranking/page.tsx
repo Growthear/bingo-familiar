@@ -5,7 +5,7 @@ import RankingClient from './RankingClient'
 export default async function RankingPage() {
   const supabase = await createClient()
 
-  const { data: profiles } = await supabase.from('profiles').select('id, username')
+  const { data: profiles } = await supabase.from('profiles').select('id, username, avatar_url')
   const { data: wins } = await supabase.from('wins').select('player_id, prize_type')
   const { data: roomPlayers } = await supabase.from('room_players').select('player_id, room_id')
   const { data: rooms } = await supabase.from('rooms').select('id, status').eq('status', 'finished')
@@ -23,6 +23,7 @@ export default async function RankingPage() {
     return {
       id: profile.id,
       username: profile.username,
+      avatar_url: profile.avatar_url ?? null,
       bingos: playerWins.filter(w => w.prize_type === 'bingo').length,
       lineas: playerWins.filter(w => w.prize_type === 'linea').length,
       ternos: playerWins.filter(w => w.prize_type === 'terno').length,

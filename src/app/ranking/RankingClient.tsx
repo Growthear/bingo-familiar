@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ChevronDownIcon } from 'lucide-react'
 
 interface PlayerStat {
   id: string
   username: string
+  avatar_url: string | null
   bingos: number
   lineas: number
   ternos: number
@@ -53,9 +55,15 @@ export default function RankingClient({ stats }: { stats: PlayerStat[] }) {
 
               {/* Avatar */}
               <Avatar className="h-9 w-9 flex-shrink-0">
-                <AvatarFallback className="bg-sky-100 text-sky-700 font-bold text-sm">
-                  {s.username.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
+                {s.avatar_url ? (
+                  <span className="relative block w-full h-full overflow-hidden rounded-full">
+                    <Image src={s.avatar_url} alt={s.username} fill className="object-cover" />
+                  </span>
+                ) : (
+                  <AvatarFallback className="bg-sky-100 text-sky-700 font-bold text-sm">
+                    {s.username.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                )}
               </Avatar>
 
               {/* Nombre completo */}
