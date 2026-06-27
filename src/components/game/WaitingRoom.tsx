@@ -211,11 +211,14 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
                 <SelectContent>
                   {[3, 5, 8, 10, 15, 20, 30].map(s => (
                     <SelectItem key={s} value={String(s)}>
-                      {s} segundos {s === 5 ? '(recomendado)' : ''}
+                      {s} segundos
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {interval !== '5' && (
+                <p className="text-xs text-muted-foreground">⭐ Recomendamos 5 segundos para una partida fluida</p>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               Cartones por jugador: <strong>{room.cards_per_player}</strong>
