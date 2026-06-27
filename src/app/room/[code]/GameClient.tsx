@@ -420,33 +420,13 @@ export default function GameClient({
                 ▶ Reanudar
               </Button>
             )}
-            {!confirmFinish ? (
-              <Button
-                variant="outline"
-                className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
-                onClick={() => setConfirmFinish(true)}
-              >
-                🏁 Finalizar
-              </Button>
-            ) : (
-              <div className="flex-1 flex gap-1.5">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 text-xs"
-                  onClick={() => setConfirmFinish(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  size="sm"
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs"
-                  onClick={() => { setConfirmFinish(false); finishGame() }}
-                >
-                  Sí, finalizar
-                </Button>
-              </div>
-            )}
+            <Button
+              variant="outline"
+              className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+              onClick={() => setConfirmFinish(true)}
+            >
+              🏁 Finalizar
+            </Button>
           </div>
         )}
 
@@ -602,6 +582,27 @@ export default function GameClient({
                 </div>
               )
             })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Confirmar finalizar ───────────────────────────────────────────── */}
+      <Dialog open={confirmFinish} onOpenChange={setConfirmFinish}>
+        <DialogContent showCloseButton={false} className="text-center max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-gray-800">¿Finalizar la partida?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">La partida se cerrará para todos los jugadores.</p>
+          <div className="flex gap-3 mt-2">
+            <Button variant="outline" className="flex-1" onClick={() => setConfirmFinish(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold"
+              onClick={() => { setConfirmFinish(false); finishGame() }}
+            >
+              Sí, finalizar
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
