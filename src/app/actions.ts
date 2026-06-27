@@ -19,6 +19,8 @@ export async function createRoom(_: unknown, formData: FormData) {
 
   const intervalSeconds = Math.max(3, Math.min(60, parseInt(formData.get('interval_seconds') as string) || 5))
   const cardsPerPlayer = Math.max(1, Math.min(6, parseInt(formData.get('cards_per_player') as string) || 1))
+  const showDrawn = formData.get('show_drawn') === '1'
+  const pricePerCard = Math.max(0, parseInt(formData.get('price_per_card') as string) || 0)
 
   // Find unique code
   let code = generateCode()
@@ -30,7 +32,7 @@ export async function createRoom(_: unknown, formData: FormData) {
 
   const { data: room, error } = await supabase
     .from('rooms')
-    .insert({ code, host_id: user.id, interval_seconds: intervalSeconds, cards_per_player: cardsPerPlayer })
+    .insert({ code, host_id: user.id, interval_seconds: intervalSeconds, cards_per_player: cardsPerPlayer, show_drawn: showDrawn, price_per_card: pricePerCard })
     .select()
     .single()
 

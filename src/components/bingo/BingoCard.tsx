@@ -8,9 +8,10 @@ interface BingoCardProps {
   drawnNumbers: Set<number>
   markedNumbers: Set<number>
   onToggleMark: (num: number) => void
+  showDrawn?: boolean
 }
 
-export default function BingoCard({ card, drawnNumbers, markedNumbers, onToggleMark }: BingoCardProps) {
+export default function BingoCard({ card, drawnNumbers, markedNumbers, onToggleMark, showDrawn = false }: BingoCardProps) {
   return (
     <div className="w-full">
       <div
@@ -42,8 +43,8 @@ export default function BingoCard({ card, drawnNumbers, markedNumbers, onToggleM
                     ? 'bg-green-500 text-white shadow-inner'
                     : marked && !drawn
                     ? 'bg-amber-300 text-amber-900'
-                    : drawn && !marked
-                    ? 'bg-sky-100 text-sky-800 ring-1 ring-sky-400'
+                    : drawn && !marked && showDrawn
+                    ? 'bg-sky-200 text-sky-500'
                     : 'bg-white text-gray-700 hover:bg-sky-50 active:bg-sky-100'
                 )}
               >
@@ -57,9 +58,11 @@ export default function BingoCard({ card, drawnNumbers, markedNumbers, onToggleM
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-green-500 inline-block" /> Marcado
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-sky-100 ring-1 ring-sky-400 inline-block" /> Salió
-        </span>
+        {showDrawn && (
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-sky-200 inline-block" /> Salió
+          </span>
+        )}
       </div>
     </div>
   )

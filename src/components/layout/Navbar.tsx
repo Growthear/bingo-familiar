@@ -1,9 +1,6 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
-import { logout } from '@/app/(auth)/actions'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import NavbarClient from './NavbarClient'
 
 export default async function Navbar() {
   const supabase = await createClient()
@@ -26,40 +23,7 @@ export default async function Navbar() {
           <span>🎱</span>
           <span>Bingo Familiar</span>
         </Link>
-        {user && profile ? (
-          <div className="flex items-center gap-3">
-            <Link href="/ranking" className="text-sm text-muted-foreground hover:text-sky-600 transition-colors">
-              🏆 Ranking
-            </Link>
-            <Link href="/profile">
-              <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-sky-200 hover:ring-sky-400 transition-all">
-                {profile.avatar_url ? (
-                  <span className="relative block w-full h-full overflow-hidden rounded-full">
-                    <Image
-                      src={profile.avatar_url}
-                      alt={profile.username}
-                      fill
-                      className="object-cover"
-                    />
-                  </span>
-                ) : (
-                  <AvatarFallback className="text-xs bg-sky-100 text-sky-700 font-bold">
-                    {profile.username.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-            </Link>
-            <form action={logout}>
-              <Button variant="ghost" size="sm" type="submit" className="text-muted-foreground hover:text-sky-700">
-                Salir
-              </Button>
-            </form>
-          </div>
-        ) : (
-          <Link href="/login">
-            <Button size="sm" className="bg-sky-500 hover:bg-sky-600">Ingresar</Button>
-          </Link>
-        )}
+        <NavbarClient profile={profile} />
       </div>
     </header>
   )

@@ -17,6 +17,10 @@ interface WaitingRoomProps {
   currentUserId: string
 }
 
+function formatMoney(n: number) {
+  return n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
+}
+
 export default function WaitingRoom({ room, players, currentUserId }: WaitingRoomProps) {
   const isHost = currentUserId === room.host_id
   const [interval, setInterval] = useState(String(room.interval_seconds))
@@ -24,6 +28,12 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
   const supabase = createClient()
 
   const handleInterval = (v: string | null) => { if (v) setInterval(v) }
+
+  const totalCards = players.length * room.cards_per_player
+  const totalPot = totalCards * room.price_per_card
+  const ternoPrize = Math.floor(totalPot * 0.10)
+  const lineaPrize = Math.floor(totalPot * 0.30)
+  const bingoPrize = totalPot - ternoPrize - lineaPrize
 
   const copyCode = () => {
     navigator.clipboard.writeText(room.code)
@@ -93,6 +103,42 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
           </div>
         </CardContent>
       </Card>
+
+      {/* Pozo */}
+      {room.price_per_card > 0 && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardHeader className="pb-2 pt-4">
+            <CardTitle className="text-base text-amber-800 flex items-center gap-2">
+              💰 Pozo acumulado
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 pb-4">
+            <div className="text-center">
+              <p className="text-3xl font-black text-amber-700">{formatMoney(totalPot)}</p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                {players.length} jugador{players.length !== 1 ? 'es' : ''} × {room.cards_per_player} cartón{room.cards_per_player !== 1 ? 'es' : ''} × {formatMoney(room.price_per_card)}
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-white rounded-xl p-2 border border-amber-200">
+                <p className="text-[10px] font-bold text-amber-600 uppercase">Terno</p>
+                <p className="text-sm font-black text-amber-800">{formatMoney(ternoPrize)}</p>
+                <p className="text-[10px] text-muted-foreground">10%</p>
+              </div>
+              <div className="bg-white rounded-xl p-2 border border-amber-200">
+                <p className="text-[10px] font-bold text-amber-600 uppercase">Línea</p>
+                <p className="text-sm font-black text-amber-800">{formatMoney(lineaPrize)}</p>
+                <p className="text-[10px] text-muted-foreground">30%</p>
+              </div>
+              <div className="bg-white rounded-xl p-2 border border-amber-200">
+                <p className="text-[10px] font-bold text-amber-600 uppercase">Bingo</p>
+                <p className="text-sm font-black text-amber-800">{formatMoney(bingoPrize)}</p>
+                <p className="text-[10px] text-muted-foreground">60%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {isHost && (
         <Card className="border-sky-200">

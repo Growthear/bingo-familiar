@@ -14,6 +14,8 @@ export default function HomeClient() {
   const [joinState, joinAction, joinPending] = useActionState(joinRoom, null)
   const [intervalSeconds, setIntervalSeconds] = useState('5')
   const [cardsPerPlayer, setCardsPerPlayer] = useState('1')
+  const [showDrawn, setShowDrawn] = useState(false)
+  const [pricePerCard, setPricePerCard] = useState('')
 
   const handleInterval = (v: string | null) => { if (v) setIntervalSeconds(v) }
   const handleCards = (v: string | null) => { if (v) setCardsPerPlayer(v) }
@@ -114,8 +116,45 @@ export default function HomeClient() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="price_per_card">Precio por cartón (opcional)</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                  <Input
+                    id="price_per_card"
+                    name="price_per_card"
+                    type="number"
+                    min="0"
+                    step="100"
+                    placeholder="0"
+                    value={pricePerCard}
+                    onChange={e => setPricePerCard(e.target.value)}
+                    className="pl-7 border-sky-300"
+                  />
+                </div>
+                {pricePerCard && parseInt(pricePerCard) > 0 && (
+                  <p className="text-xs text-sky-600">
+                    Pozo estimado con {cardsPerPlayer} cartón/es × {cardsPerPlayer} jugadores...
+                    El bingo se lleva 60%, línea 30%, terno 10%
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center justify-between py-2 border border-sky-100 rounded-xl px-3 bg-sky-50">
+                <div>
+                  <p className="text-sm font-medium text-sky-800">Mostrar números salidos en cartón</p>
+                  <p className="text-xs text-muted-foreground">Los jugadores ven qué números ya salieron aunque no los hayan marcado</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDrawn(v => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ml-3 ${showDrawn ? 'bg-sky-500' : 'bg-gray-200'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow ${showDrawn ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
               <input type="hidden" name="interval_seconds" value={intervalSeconds} />
               <input type="hidden" name="cards_per_player" value={cardsPerPlayer} />
+              <input type="hidden" name="show_drawn" value={showDrawn ? '1' : '0'} />
               <Button
                 className="w-full h-12 text-base bg-sky-500 hover:bg-sky-600 font-bold"
                 type="submit"

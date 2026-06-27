@@ -1,7 +1,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
 
 export type PrizeType = 'terno' | 'linea' | 'bingo'
-export type RoomStatus = 'waiting' | 'playing' | 'finished'
+export type RoomStatus = 'waiting' | 'playing' | 'paused' | 'finished'
 
 export type Database = {
   public: {
@@ -35,6 +35,8 @@ export type Database = {
           interval_seconds: number
           cards_per_player: number
           current_prize: PrizeType | null
+          show_drawn: boolean
+          price_per_card: number
           created_at: string
           started_at: string | null
           finished_at: string | null
@@ -47,6 +49,8 @@ export type Database = {
           interval_seconds?: number
           cards_per_player?: number
           current_prize?: PrizeType | null
+          show_drawn?: boolean
+          price_per_card?: number
           created_at?: string
           started_at?: string | null
           finished_at?: string | null
@@ -59,6 +63,8 @@ export type Database = {
           interval_seconds?: number
           cards_per_player?: number
           current_prize?: PrizeType | null
+          show_drawn?: boolean
+          price_per_card?: number
           started_at?: string | null
           finished_at?: string | null
         }
