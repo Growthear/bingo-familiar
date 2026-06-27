@@ -458,11 +458,6 @@ export default function GameClient({
             {room.status === 'paused' && (
               <Badge className="bg-amber-400 text-amber-900 text-[10px] px-1.5 py-0">⏸ PAUSA</Badge>
             )}
-            {wonPrizes.size > 0 && (
-              <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0">
-                ✓ {[...wonPrizes].map(p => PRIZE_LABELS[p as PrizeType]).join(' · ')}
-              </Badge>
-            )}
             <button
               onClick={() => setSettingsOpen(true)}
               className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 active:scale-95 transition-all text-gray-600"
