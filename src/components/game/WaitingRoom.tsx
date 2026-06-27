@@ -139,19 +139,23 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
         </CardContent>
       </Card>
 
-      {/* Alias del host para pagar */}
-      {room.price_per_card > 0 && (() => {
+      {/* Alias del host para pagar — solo visible para jugadores, no para el host */}
+      {room.price_per_card > 0 && !isHost && (() => {
         const hostProfile = players.find(p => p.id === room.host_id)
         if (!hostProfile?.mp_alias) return null
+        const totalToPay = room.price_per_card * room.cards_per_player
         return (
           <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 flex items-center gap-3">
             <span className="text-2xl flex-shrink-0">💳</span>
-            <div>
+            <div className="flex-1">
               <p className="text-xs text-green-700 font-semibold">Alias Mercado Pago del host</p>
               <p className="font-black text-green-800 text-base tracking-wide">{hostProfile.mp_alias}</p>
-              <p className="text-[11px] text-green-600 mt-0.5">
-                Transferile {formatMoney(room.price_per_card)} por cartón a <strong>{hostProfile.username}</strong>
-              </p>
+              <div className="flex items-center justify-between mt-0.5">
+                <p className="text-[11px] text-green-600">
+                  Transferile <strong>{formatMoney(totalToPay)}</strong> a {hostProfile.username}
+                </p>
+                <p className="text-[11px] text-green-500">{formatMoney(room.price_per_card)}/cartón</p>
+              </div>
             </div>
           </div>
         )

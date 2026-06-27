@@ -150,6 +150,20 @@ export default function GameClient({
     return () => { supabase.removeChannel(channel) }
   }, [room.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Polling de jugadores en sala de espera (backup del realtime DELETE) ──
+  useEffect(() => {
+    if (room.status !== 'waiting') return
+    const interval = setInterval(async () => {
+      const { data: playerIds } = await supabase
+        .from('room_players').select('player_id').eq('room_id', room.id)
+      if (!playerIds) return
+      const { data } = await supabase
+        .from('profiles').select('*').in('id', playerIds.map(p => p.player_id))
+      if (data) setPlayers(data)
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [room.status, room.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Host auto-draw (stops when paused or finished) ───────────────────────
   useEffect(() => {
     if (!isHost || room.status !== 'playing') return
