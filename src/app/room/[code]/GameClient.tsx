@@ -22,7 +22,7 @@ import Link from 'next/link'
 import { restartRoom } from '@/app/actions'
 import { vibrate, isVibrationEnabled, setVibrationEnabled } from '@/lib/vibrate'
 import { playSound, isSoundEnabled, setSoundEnabled } from '@/lib/sounds'
-import { speakNumber, isVoiceEnabled, setVoiceEnabled } from '@/lib/voice'
+import { speakNumber, isVoiceEnabled, setVoiceEnabled, unlockVoice } from '@/lib/voice'
 
 interface GameClientProps {
   room: Room
@@ -77,12 +77,22 @@ export default function GameClient({
   const [voiceOn, setVoiceOn] = useState(true)
   const [confirmLeave, setConfirmLeave] = useState(false)
   const [isLeaving, startLeaving] = useTransition()
+  const [bingoCountdown, setBingoCountdown] = useState<number | null>(null)
   const drawIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const bingoWonRef = useRef(false)
 
   useEffect(() => {
     setSoundOn(isSoundEnabled())
     setVibrateOn(isVibrationEnabled())
     setVoiceOn(isVoiceEnabled())
+    // iOS necesita un gesto del usuario para desbloquear speechSynthesis
+    const handler = () => unlockVoice()
+    window.addEventListener('touchstart', handler, { once: true })
+    window.addEventListener('click', handler, { once: true })
+    return () => {
+      window.removeEventListener('touchstart', handler)
+      window.removeEventListener('click', handler)
+    }
   }, [])
 
   // Refs to avoid stale closures in realtime handlers
@@ -161,6 +171,12 @@ export default function GameClient({
 
         toast.success(`🎉 ${winner?.username ?? 'Alguien'} cantó ${PRIZE_LABELS[win.prize_type]}!`, { duration: 5000 })
 
+        if (win.prize_type === 'bingo' && !bingoWonRef.current) {
+          bingoWonRef.current = true
+          if (drawIntervalRef.current) clearInterval(drawIntervalRef.current)
+          setBingoCountdown(5)
+        }
+
         // Show celebration modal for current user
         if (win.player_id === currentUser.id) {
           vibrate('win')
@@ -190,11 +206,12 @@ export default function GameClient({
     return () => clearInterval(interval)
   }, [room.status, room.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Host auto-draw (stops when paused or finished) ───────────────────────
+  // ── Host auto-draw (stops when paused, finished, or bingo won) ──────────
   useEffect(() => {
     if (!isHost || room.status !== 'playing') return
 
     drawIntervalRef.current = setInterval(async () => {
+      if (bingoWonRef.current) return
       const { data, error } = await supabase.rpc('draw_next_number', { p_room_id: room.id })
       if (error) { console.error(error); return }
       if (data === null) {
@@ -208,6 +225,17 @@ export default function GameClient({
 
     return () => { if (drawIntervalRef.current) clearInterval(drawIntervalRef.current) }
   }, [isHost, room.status, room.interval_seconds, room.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Countdown tras bingo ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (bingoCountdown === null) return
+    if (bingoCountdown === 0) {
+      if (isHost) finishGame()
+      return
+    }
+    const t = setTimeout(() => setBingoCountdown(n => (n ?? 1) - 1), 1000)
+    return () => clearTimeout(t)
+  }, [bingoCountdown]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleMark = useCallback((cardId: string, num: number) => {
     vibrate('tap')
@@ -452,6 +480,18 @@ export default function GameClient({
           <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-center">
             <p className="font-bold text-amber-800">⏸ Partida en pausa</p>
             <p className="text-xs text-amber-600">El host va a reanudar en un momento</p>
+          </div>
+        )}
+
+        {/* Bingo countdown banner */}
+        {bingoCountdown !== null && bingoCountdown > 0 && (
+          <div className="bg-green-50 border-2 border-green-400 rounded-xl px-4 py-3 text-center animate-pulse">
+            <p className="font-black text-green-700 text-lg">🎱 ¡Bingo cantado!</p>
+            <p className="text-sm text-green-600">
+              {room.shared_prizes
+                ? `¿También tenés bingo? Tenés ${bingoCountdown}s para reclamar`
+                : `La partida termina en ${bingoCountdown}s`}
+            </p>
           </div>
         )}
 
