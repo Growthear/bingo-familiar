@@ -14,6 +14,7 @@ import type { Profile, Win } from '@/types/database'
 import { PRIZE_LABELS } from '@/lib/bingo/gameLogic'
 import { isVibrationEnabled, setVibrationEnabled, vibrate } from '@/lib/vibrate'
 import { isSoundEnabled, setSoundEnabled, playSound } from '@/lib/sounds'
+import { isVoiceEnabled, setVoiceEnabled } from '@/lib/voice'
 
 interface ProfileClientProps {
   initialProfile: Profile
@@ -38,9 +39,11 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
 
   const [vibrationOn, setVibrationOn] = useState(true)
   const [soundOn, setSoundOn] = useState(true)
+  const [voiceOn, setVoiceOn] = useState(true)
   useEffect(() => {
     setVibrationOn(isVibrationEnabled())
     setSoundOn(isSoundEnabled())
+    setVoiceOn(isVoiceEnabled())
   }, [])
 
   const [newPassword, setNewPassword] = useState('')
@@ -365,6 +368,30 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
               aria-label="Toggle sonidos"
             >
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${soundOn ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>
+          </div>
+
+          <div className="h-px bg-sky-50" />
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-base font-black text-sky-700">🗣️ Voz</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {voiceOn ? 'Activada — canta los números en voz alta' : 'Desactivada'}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const next = !voiceOn
+                setVoiceOn(next)
+                setVoiceEnabled(next)
+              }}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${
+                voiceOn ? 'bg-sky-500' : 'bg-gray-200'
+              }`}
+              aria-label="Toggle voz"
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${voiceOn ? 'translate-x-6' : 'translate-x-0'}`} />
             </button>
           </div>
         </CardContent>

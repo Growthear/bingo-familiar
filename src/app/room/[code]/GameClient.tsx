@@ -20,8 +20,9 @@ import {
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { restartRoom } from '@/app/actions'
-import { vibrate } from '@/lib/vibrate'
-import { playSound } from '@/lib/sounds'
+import { vibrate, isVibrationEnabled, setVibrationEnabled } from '@/lib/vibrate'
+import { playSound, isSoundEnabled, setSoundEnabled } from '@/lib/sounds'
+import { speakNumber, isVoiceEnabled, setVoiceEnabled } from '@/lib/voice'
 
 interface GameClientProps {
   room: Room
@@ -70,7 +71,19 @@ export default function GameClient({
   const [playersOpen, setPlayersOpen] = useState(false)
   const [restarting, setRestarting] = useState(false)
   const [confirmFinish, setConfirmFinish] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [soundOn, setSoundOn] = useState(true)
+  const [vibrateOn, setVibrateOn] = useState(true)
+  const [voiceOn, setVoiceOn] = useState(true)
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const [isLeaving, startLeaving] = useTransition()
   const drawIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    setSoundOn(isSoundEnabled())
+    setVibrateOn(isVibrationEnabled())
+    setVoiceOn(isVoiceEnabled())
+  }, [])
 
   // Refs to avoid stale closures in realtime handlers
   const playersRef = useRef(players)
@@ -107,8 +120,10 @@ export default function GameClient({
         event: 'INSERT', schema: 'public', table: 'drawn_numbers',
         filter: `room_id=eq.${room.id}`,
       }, (payload) => {
-        setDrawnNumbers(prev => [...prev, (payload.new as DrawnNumber).number])
+        const num = (payload.new as DrawnNumber).number
+        setDrawnNumbers(prev => [...prev, num])
         playSound('number')
+        speakNumber(num)
       })
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'rooms',
@@ -247,6 +262,16 @@ export default function GameClient({
     if (error) toast.error('No se pudo finalizar')
   }
 
+  const leaveGame = () => {
+    startLeaving(async () => {
+      await supabase.from('bingo_cards').delete()
+        .eq('room_id', room.id).eq('player_id', currentUser.id)
+      await supabase.from('room_players').delete()
+        .eq('room_id', room.id).eq('player_id', currentUser.id)
+      router.push('/')
+    })
+  }
+
   // ── Cancelled ────────────────────────────────────────────────────────────
   if (room.status === 'cancelled') {
     return (
@@ -277,21 +302,31 @@ export default function GameClient({
   // ── Finished ─────────────────────────────────────────────────────────────
   if (room.status === 'finished') {
     const sortedWins = [...wins].sort((a, b) => new Date(a.won_at).getTime() - new Date(b.won_at).getTime())
-    const bingoWinner = wins.find(w => w.prize_type === 'bingo')
-    const bingoWinnerName = bingoWinner ? (players.find(p => p.id === bingoWinner.player_id)?.username ?? 'Alguien') : null
+    const bingoWinners = wins.filter(w => w.prize_type === 'bingo')
+    const bingoWinnerNames = bingoWinners.map(w => players.find(p => p.id === w.player_id)?.username ?? 'Alguien')
+
+    const winnersPerPrize = (prize: PrizeType) => wins.filter(w => w.prize_type === prize).length
+    const prizePerWinner = (prize: PrizeType) => {
+      const count = winnersPerPrize(prize)
+      return count > 1 ? Math.floor(prizes[prize] / count) : prizes[prize]
+    }
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-sky-100 via-white to-sky-100 flex flex-col items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-sm w-full">
           <div className="text-6xl">🎊</div>
           <h1 className="text-3xl font-black text-sky-700">¡Partida terminada!</h1>
-          {bingoWinnerName && (
-            <p className="text-lg font-bold text-amber-700">🎱 ¡{bingoWinnerName} ganó el Bingo!</p>
+          {bingoWinnerNames.length > 0 && (
+            <p className="text-lg font-bold text-amber-700">
+              🎱 ¡{bingoWinnerNames.join(' y ')} {bingoWinnerNames.length > 1 ? 'ganaron' : 'ganó'} el Bingo!
+            </p>
           )}
           <div className="bg-white rounded-2xl p-4 shadow-lg border border-sky-200 space-y-2">
             {sortedWins.map(w => {
               const winner = players.find(p => p.id === w.player_id)
-              const prizeAmount = prizes[w.prize_type as PrizeType]
+              const prize = w.prize_type as PrizeType
+              const amount = prizePerWinner(prize)
+              const count = winnersPerPrize(prize)
               return (
                 <div key={w.id} className="flex justify-between items-start text-sm py-1 gap-2">
                   <div>
@@ -302,7 +337,12 @@ export default function GameClient({
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {totalPot > 0 && (
-                      <span className="text-green-700 font-bold text-xs">{formatMoney(prizeAmount)}</span>
+                      <div className="text-right">
+                        <span className="text-green-700 font-bold text-xs">{formatMoney(amount)}</span>
+                        {count > 1 && (
+                          <p className="text-[10px] text-muted-foreground">dividido ÷{count}</p>
+                        )}
+                      </div>
                     )}
                     <Badge className="bg-sky-500 text-white">{PRIZE_LABELS[w.prize_type]}</Badge>
                   </div>
@@ -395,6 +435,12 @@ export default function GameClient({
                 ✓ {[...wonPrizes].map(p => PRIZE_LABELS[p as PrizeType]).join(' · ')}
               </Badge>
             )}
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 active:scale-95 transition-all text-gray-600"
+            >
+              ⚙️
+            </button>
           </div>
         </div>
       </header>
@@ -486,12 +532,17 @@ export default function GameClient({
             <p className="text-[11px] font-bold text-sky-600 uppercase tracking-wider">Premios cantados</p>
             {wins.map(w => {
               const winner = players.find(p => p.id === w.player_id)
+              const wPrize = w.prize_type as PrizeType
+              const wCount = wins.filter(x => x.prize_type === wPrize).length
+              const wAmount = wCount > 1 ? Math.floor(prizes[wPrize] / wCount) : prizes[wPrize]
               return (
                 <div key={w.id} className="flex justify-between items-center text-sm">
                   <span className="font-medium">{winner?.username ?? '?'}</span>
                   <div className="flex items-center gap-1.5">
                     {totalPot > 0 && (
-                      <span className="text-xs font-bold text-amber-700">{formatMoney(prizes[w.prize_type])}</span>
+                      <span className="text-xs font-bold text-amber-700">
+                        {formatMoney(wAmount)}{wCount > 1 ? ` ÷${wCount}` : ''}
+                      </span>
                     )}
                     <Badge className="bg-sky-500 text-white text-xs">{PRIZE_LABELS[w.prize_type]}</Badge>
                   </div>
@@ -593,6 +644,61 @@ export default function GameClient({
                 </div>
               )
             })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Configuración ────────────────────────────────────────────────── */}
+      <Dialog open={settingsOpen} onOpenChange={(o) => { setSettingsOpen(o); if (!o) setConfirmLeave(false) }}>
+        <DialogContent showCloseButton={true} className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-base font-black text-gray-800">⚙️ Configuración</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-1">
+            {[
+              { label: '🔊 Sonido', desc: 'Efectos de audio', value: soundOn, toggle: () => { const v = !soundOn; setSoundEnabled(v); setSoundOn(v) } },
+              { label: '📳 Vibración', desc: 'Feedback al tocar', value: vibrateOn, toggle: () => { const v = !vibrateOn; setVibrationEnabled(v); setVibrateOn(v) } },
+              { label: '🗣️ Voz', desc: 'Canta los números en voz alta', value: voiceOn, toggle: () => { const v = !voiceOn; setVoiceEnabled(v); setVoiceOn(v) } },
+            ].map(({ label, desc, value, toggle }) => (
+              <div key={label} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{label}</p>
+                  <p className="text-xs text-muted-foreground">{desc}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggle}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ml-3 ${value ? 'bg-sky-500' : 'bg-gray-200'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow ${value ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            ))}
+
+            {!isHost && (
+              <div className="pt-1">
+                {!confirmLeave ? (
+                  <button
+                    onClick={() => setConfirmLeave(true)}
+                    className="w-full text-sm text-red-500 font-medium py-2 rounded-xl border border-red-200 hover:bg-red-50 transition-colors"
+                  >
+                    🚪 Abandonar partida
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-3 space-y-2">
+                    <p className="text-sm font-semibold text-red-700 text-center">¿Abandonar la partida?</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => setConfirmLeave(false)} disabled={isLeaving}>
+                        Quedarme
+                      </Button>
+                      <Button size="sm" className="flex-1 bg-red-500 hover:bg-red-600 text-white" onClick={leaveGame} disabled={isLeaving}>
+                        {isLeaving ? 'Saliendo...' : 'Sí, salir'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
