@@ -12,6 +12,9 @@ export async function login(_: unknown, formData: FormData) {
   })
 
   if (error) {
+    if (error.message.includes('Email not confirmed')) {
+      return { error: 'Tenés que confirmar tu email antes de ingresar. Revisá tu casilla.' }
+    }
     return { error: 'Email o contraseña incorrectos' }
   }
 
@@ -59,4 +62,19 @@ export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
   redirect('/login')
+}
+
+export async function resetPassword(_: unknown, formData: FormData) {
+  const supabase = await createClient()
+  const email = formData.get('email') as string
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/update-password`,
+  })
+
+  if (error) {
+    return { error: 'No se pudo enviar el mail. Verificá el email ingresado.' }
+  }
+
+  return { success: '¡Listo! Revisá tu casilla de mail para resetear la contraseña.' }
 }

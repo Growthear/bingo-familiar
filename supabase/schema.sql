@@ -146,8 +146,11 @@ declare
   v_number integer;
   v_draw_order integer;
 begin
-  if not exists (select 1 from public.rooms where id = p_room_id and status = 'playing') then
-    raise exception 'La sala no está en estado de juego';
+  if not exists (
+    select 1 from public.rooms
+    where id = p_room_id and status = 'playing' and host_id = auth.uid()
+  ) then
+    raise exception 'Solo el host puede sacar números';
   end if;
 
   select coalesce(max(draw_order), 0) + 1 into v_draw_order

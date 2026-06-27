@@ -61,6 +61,7 @@ export async function joinRoom(_: unknown, formData: FormData) {
 
   if (!room) return { error: 'Sala no encontrada. Revisá el código.' }
   if (room.status === 'finished') return { error: 'Esa partida ya terminó.' }
+  if (room.status === 'playing') return { error: 'La partida ya empezó. Esperá la próxima.' }
 
   const { data: existing } = await supabase
     .from('room_players')

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { logout } from '@/app/(auth)/actions'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,11 @@ export default async function Navbar() {
 
   let profile = null
   if (user) {
-    const { data } = await supabase.from('profiles').select('username').eq('id', user.id).single()
+    const { data } = await supabase
+      .from('profiles')
+      .select('username, avatar_url')
+      .eq('id', user.id)
+      .single()
     profile = data
   }
 
@@ -27,10 +32,21 @@ export default async function Navbar() {
               🏆 Ranking
             </Link>
             <Link href="/profile">
-              <Avatar className="h-8 w-8 cursor-pointer">
-                <AvatarFallback className="text-xs bg-sky-100 text-sky-700 font-bold">
-                  {profile.username.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
+              <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-sky-200 hover:ring-sky-400 transition-all">
+                {profile.avatar_url ? (
+                  <span className="relative block w-full h-full overflow-hidden rounded-full">
+                    <Image
+                      src={profile.avatar_url}
+                      alt={profile.username}
+                      fill
+                      className="object-cover"
+                    />
+                  </span>
+                ) : (
+                  <AvatarFallback className="text-xs bg-sky-100 text-sky-700 font-bold">
+                    {profile.username.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                )}
               </Avatar>
             </Link>
             <form action={logout}>
