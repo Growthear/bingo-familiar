@@ -55,7 +55,7 @@ export async function createRoom(_: unknown, formData: FormData) {
     .select()
     .single()
 
-  if (error || !room) return { error: error?.message ?? 'No se pudo crear la sala' }
+  if (error || !room) return { error: 'No se pudo crear la sala' }
 
   await supabase.from('room_players').insert({ room_id: room.id, player_id: user.id })
   await insertCards(supabase, room.id, user.id, cardsPerPlayer)
