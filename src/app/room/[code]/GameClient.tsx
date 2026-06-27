@@ -663,20 +663,19 @@ export default function GameClient({
               return (
                 <div className={`grid gap-2 text-center ${activePrizes.length === 1 ? 'grid-cols-1' : activePrizes.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                   {activePrizes.map((prize) => {
-                    const winner = wins.find(w => w.prize_type === prize)
-                    const winnerName = winner
-                      ? (players.find(p => p.id === winner.player_id)?.username ?? '?')
-                      : null
+                    const prizeWins = wins.filter(w => w.prize_type === prize)
+                    const winnerNames = prizeWins.map(w => players.find(p => p.id === w.player_id)?.username ?? '?')
+                    const perWinner = prizeWins.length > 1 ? Math.floor(prizes[prize] / prizeWins.length) : prizes[prize]
                     return (
                       <div
                         key={prize}
-                        className={`rounded-xl p-3 border ${winner ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-100'}`}
+                        className={`rounded-xl p-3 border ${prizeWins.length > 0 ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-100'}`}
                       >
                         <p className="text-[11px] font-bold text-amber-700 uppercase mb-1">{PRIZE_LABELS[prize]}</p>
-                        <p className="text-sm font-black text-amber-900">{formatMoney(prizes[prize])}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{pcts[prize]}</p>
-                        {winnerName && (
-                          <p className="text-[10px] text-green-700 font-bold mt-1 truncate">✓ {winnerName}</p>
+                        <p className="text-sm font-black text-amber-900">{formatMoney(perWinner)}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{pcts[prize]}{prizeWins.length > 1 ? ` ÷${prizeWins.length}` : ''}</p>
+                        {winnerNames.length > 0 && (
+                          <p className="text-[10px] text-green-700 font-bold mt-1">✓ {winnerNames.join(' · ')}</p>
                         )}
                       </div>
                     )
