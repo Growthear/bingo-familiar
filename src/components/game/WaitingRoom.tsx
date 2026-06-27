@@ -55,9 +55,8 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
       if (error) {
         toast.error('No se pudo cancelar la sala')
         setConfirmCancel(false)
-      } else {
-        router.push('/')
       }
+      // El realtime actualiza el estado y muestra la pantalla de cancelación para todos
     })
   }
 

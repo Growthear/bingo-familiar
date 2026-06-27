@@ -20,6 +20,8 @@ import {
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { restartRoom } from '@/app/actions'
+import { vibrate } from '@/lib/vibrate'
+import { playSound } from '@/lib/sounds'
 
 interface GameClientProps {
   room: Room
@@ -95,6 +97,7 @@ export default function GameClient({
         filter: `room_id=eq.${room.id}`,
       }, (payload) => {
         setDrawnNumbers(prev => [...prev, (payload.new as DrawnNumber).number])
+        playSound('number')
       })
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'rooms',
@@ -134,6 +137,8 @@ export default function GameClient({
 
         // Show celebration modal for current user
         if (win.player_id === currentUser.id) {
+          vibrate('win')
+          playSound(win.prize_type === 'bingo' ? 'win' : 'success')
           const pot = playersRef.current.length * initialRoom.cards_per_player * initialRoom.price_per_card
           const p = calcPrizes(pot)
           const amount = p[win.prize_type as PrizeType]
@@ -165,6 +170,8 @@ export default function GameClient({
   }, [isHost, room.status, room.interval_seconds, room.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleMark = useCallback((cardId: string, num: number) => {
+    vibrate('tap')
+    playSound('tap')
     setMarkedNumbers(prev => {
       const marks = new Set(prev[cardId] ?? [])
       if (marks.has(num)) marks.delete(num); else marks.add(num)
@@ -178,6 +185,8 @@ export default function GameClient({
       return
     }
     if (!checkPrize(card.numbers as BingoGrid, drawnSet, prize)) {
+      vibrate('error')
+      playSound('error')
       toast.error(`Todavía no tenés ${prize} 😅`)
       return
     }

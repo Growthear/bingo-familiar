@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useRef, useState, useTransition, useEffect } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,8 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import type { Profile, Win } from '@/types/database'
 import { PRIZE_LABELS } from '@/lib/bingo/gameLogic'
+import { isVibrationEnabled, setVibrationEnabled, vibrate } from '@/lib/vibrate'
+import { isSoundEnabled, setSoundEnabled, playSound } from '@/lib/sounds'
 
 interface ProfileClientProps {
   initialProfile: Profile
@@ -33,6 +35,13 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
 
   const [mpAlias, setMpAlias] = useState(initialProfile.mp_alias ?? '')
   const [savingAlias, startSavingAlias] = useTransition()
+
+  const [vibrationOn, setVibrationOn] = useState(true)
+  const [soundOn, setSoundOn] = useState(true)
+  useEffect(() => {
+    setVibrationOn(isVibrationEnabled())
+    setSoundOn(isSoundEnabled())
+  }, [])
 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -305,6 +314,59 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
           >
             {savingAlias ? 'Guardando...' : 'Guardar alias'}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Vibración y sonido ─────────────────────────────────────────── */}
+      <Card className="border-sky-200">
+        <CardContent className="pt-4 pb-4 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-base font-black text-sky-700">📳 Vibración</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {vibrationOn ? 'Activada — el celular vibra al jugar' : 'Desactivada'}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const next = !vibrationOn
+                setVibrationOn(next)
+                setVibrationEnabled(next)
+                if (next) vibrate('success')
+              }}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${
+                vibrationOn ? 'bg-sky-500' : 'bg-gray-200'
+              }`}
+              aria-label="Toggle vibración"
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${vibrationOn ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>
+          </div>
+
+          <div className="h-px bg-sky-50" />
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-base font-black text-sky-700">🔊 Sonidos</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {soundOn ? 'Activados — chimes y fanfarrias al jugar' : 'Desactivados'}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const next = !soundOn
+                setSoundOn(next)
+                setSoundEnabled(next)
+                if (next) playSound('success')
+              }}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${
+                soundOn ? 'bg-sky-500' : 'bg-gray-200'
+              }`}
+              aria-label="Toggle sonidos"
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${soundOn ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>
+          </div>
         </CardContent>
       </Card>
 
