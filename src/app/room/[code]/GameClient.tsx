@@ -22,7 +22,7 @@ import Link from 'next/link'
 import { restartRoom } from '@/app/actions'
 import { vibrate, isVibrationEnabled, setVibrationEnabled } from '@/lib/vibrate'
 import { playSound, isSoundEnabled, setSoundEnabled } from '@/lib/sounds'
-import { speakNumber, isVoiceEnabled, setVoiceEnabled, unlockVoice } from '@/lib/voice'
+import { speakNumber, speakText, isVoiceEnabled, setVoiceEnabled, unlockVoice } from '@/lib/voice'
 
 interface GameClientProps {
   room: Room
@@ -78,8 +78,11 @@ export default function GameClient({
   const [confirmLeave, setConfirmLeave] = useState(false)
   const [isLeaving, startLeaving] = useTransition()
   const [bingoCountdown, setBingoCountdown] = useState<number | null>(null)
+  const [prizeCountdown, setPrizeCountdown] = useState<number | null>(null)
   const drawIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bingoWonRef = useRef(false)
+  const pausedForPrizeRef = useRef(false)
+  const prevStatusRef = useRef(room.status)
 
   useEffect(() => {
     setSoundOn(isSoundEnabled())
@@ -139,7 +142,12 @@ export default function GameClient({
         event: 'UPDATE', schema: 'public', table: 'rooms',
         filter: `id=eq.${room.id}`,
       }, (payload) => {
-        setRoom(payload.new as Room)
+        const newRoom = payload.new as Room
+        const prev = prevStatusRef.current
+        prevStatusRef.current = newRoom.status
+        if (newRoom.status === 'paused' && prev === 'playing') speakText('Juego pausado')
+        if (newRoom.status === 'playing' && prev === 'paused') speakText('Retomamos')
+        setRoom(newRoom)
       })
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'room_players',
@@ -169,12 +177,18 @@ export default function GameClient({
         const winner = playersRef.current.find(p => p.id === win.player_id) ??
           (win.player_id === currentUser.id ? currentUser : null)
 
-        toast.success(`🎉 ${winner?.username ?? 'Alguien'} cantó ${PRIZE_LABELS[win.prize_type]}!`, { duration: 5000 })
+        const winnerName = winner?.username ?? 'Alguien'
+        const prizeLabel = PRIZE_LABELS[win.prize_type]
+        toast.success(`🎉 ${winnerName} cantó ${prizeLabel}!`, { duration: 5000 })
+        speakText(`${winnerName} cantó ${prizeLabel}`)
 
         if (win.prize_type === 'bingo' && !bingoWonRef.current) {
           bingoWonRef.current = true
           if (drawIntervalRef.current) clearInterval(drawIntervalRef.current)
           setBingoCountdown(5)
+        } else if (win.prize_type !== 'bingo' && !pausedForPrizeRef.current) {
+          pausedForPrizeRef.current = true
+          setPrizeCountdown(5)
         }
 
         // Show celebration modal for current user
@@ -211,7 +225,7 @@ export default function GameClient({
     if (!isHost || room.status !== 'playing') return
 
     drawIntervalRef.current = setInterval(async () => {
-      if (bingoWonRef.current) return
+      if (bingoWonRef.current || pausedForPrizeRef.current) return
       const { data, error } = await supabase.rpc('draw_next_number', { p_room_id: room.id })
       if (error) { console.error(error); return }
       if (data === null) {
@@ -236,6 +250,18 @@ export default function GameClient({
     const t = setTimeout(() => setBingoCountdown(n => (n ?? 1) - 1), 1000)
     return () => clearTimeout(t)
   }, [bingoCountdown]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Countdown pausa por terno/línea ──────────────────────────────────────
+  useEffect(() => {
+    if (prizeCountdown === null) return
+    if (prizeCountdown === 0) {
+      pausedForPrizeRef.current = false
+      setPrizeCountdown(null)
+      return
+    }
+    const t = setTimeout(() => setPrizeCountdown(n => (n ?? 1) - 1), 1000)
+    return () => clearTimeout(t)
+  }, [prizeCountdown])
 
   const toggleMark = useCallback((cardId: string, num: number) => {
     vibrate('tap')
@@ -478,6 +504,18 @@ export default function GameClient({
           </div>
         )}
 
+        {/* Premio terno/línea — pausa breve */}
+        {prizeCountdown !== null && prizeCountdown > 0 && (
+          <div className="bg-sky-50 border-2 border-sky-400 rounded-xl px-4 py-3 text-center">
+            <p className="font-black text-sky-700 text-lg">🎉 ¡Premio cantado!</p>
+            <p className="text-sm text-sky-600">
+              {room.shared_prizes
+                ? `¿También lo tenés? Tenés ${prizeCountdown}s para reclamar`
+                : `Retomamos en ${prizeCountdown}s`}
+            </p>
+          </div>
+        )}
+
         {/* Bingo countdown banner */}
         {bingoCountdown !== null && bingoCountdown > 0 && (
           <div className="bg-green-50 border-2 border-green-400 rounded-xl px-4 py-3 text-center animate-pulse">
@@ -608,10 +646,11 @@ export default function GameClient({
           <div className="space-y-1.5 pt-1 max-h-72 overflow-y-auto">
             {players.map(p => (
               <div key={p.id} className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-sky-50">
-                <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-black text-sky-700">
-                    {p.username.slice(0, 2).toUpperCase()}
-                  </span>
+                <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {p.avatar_url
+                    ? <img src={p.avatar_url} alt={p.username} className="w-full h-full object-cover" />
+                    : <span className="text-xs font-black text-sky-700">{p.username.slice(0, 2).toUpperCase()}</span>
+                  }
                 </div>
                   <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{p.username}</p>

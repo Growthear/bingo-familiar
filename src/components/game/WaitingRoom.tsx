@@ -6,7 +6,7 @@ import type { Room, Profile } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
@@ -123,7 +123,8 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
             <div className="flex flex-wrap gap-2">
               {players.map(p => (
                 <div key={p.id} className="flex items-center gap-1.5 bg-sky-50 border border-sky-200 rounded-full px-3 py-1.5">
-                  <Avatar className="h-5 w-5">
+                  <Avatar className="h-6 w-6">
+                    {p.avatar_url && <AvatarImage src={p.avatar_url} alt={p.username} />}
                     <AvatarFallback className="text-[9px] bg-sky-200 text-sky-700 font-bold">
                       {p.username.slice(0, 2).toUpperCase()}
                     </AvatarFallback>

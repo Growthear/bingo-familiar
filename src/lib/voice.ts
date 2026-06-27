@@ -21,15 +21,22 @@ export function unlockVoice() {
   unlocked = true
 }
 
-export function speakNumber(number: number) {
+function speak(text: string, rate = 0.9) {
   if (!isVoiceEnabled()) return
   if (typeof window === 'undefined' || !window.speechSynthesis) return
-  // iOS fix: resume if paused (can happen after inactivity)
   if (window.speechSynthesis.paused) window.speechSynthesis.resume()
   window.speechSynthesis.cancel()
-  const utter = new SpeechSynthesisUtterance(`número ${number}`)
+  const utter = new SpeechSynthesisUtterance(text)
   utter.lang = 'es-AR'
-  utter.rate = 0.85
+  utter.rate = rate
   utter.pitch = 1
   window.speechSynthesis.speak(utter)
+}
+
+export function speakNumber(number: number) {
+  speak(`número ${number}`, 0.85)
+}
+
+export function speakText(text: string) {
+  speak(text, 0.9)
 }
