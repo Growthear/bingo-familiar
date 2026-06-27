@@ -70,7 +70,11 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
     if (!open) return
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') closeMenu() }
     window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', handler)
+      document.body.style.overflow = ''
+    }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const avatarContent = profile?.avatar_url ? (
