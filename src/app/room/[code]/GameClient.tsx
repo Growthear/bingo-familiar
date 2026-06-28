@@ -146,7 +146,11 @@ export default function GameClient({
         const prev = prevStatusRef.current
         prevStatusRef.current = newRoom.status
         if (newRoom.status === 'paused' && prev === 'playing') speakText('Juego pausado')
-        if (newRoom.status === 'playing' && prev === 'paused') speakText('Retomamos')
+        if (newRoom.status === 'playing' && prev === 'paused') {
+          speakText('Retomamos')
+          pausedForPrizeRef.current = false
+          setPrizeCountdown(null)
+        }
         setRoom(newRoom)
       })
       .on('postgres_changes', {
@@ -189,6 +193,9 @@ export default function GameClient({
         } else if (win.prize_type !== 'bingo' && !pausedForPrizeRef.current) {
           pausedForPrizeRef.current = true
           setPrizeCountdown(5)
+          if (isHost) {
+            supabase.from('rooms').update({ status: 'paused' }).eq('id', room.id)
+          }
         }
 
         // Show celebration modal for current user
@@ -257,11 +264,14 @@ export default function GameClient({
     if (prizeCountdown === 0) {
       pausedForPrizeRef.current = false
       setPrizeCountdown(null)
+      if (isHost) {
+        supabase.from('rooms').update({ status: 'playing' }).eq('id', room.id)
+      }
       return
     }
     const t = setTimeout(() => setPrizeCountdown(n => (n ?? 1) - 1), 1000)
     return () => clearTimeout(t)
-  }, [prizeCountdown])
+  }, [prizeCountdown]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleMark = useCallback((cardId: string, num: number) => {
     vibrate('tap')
