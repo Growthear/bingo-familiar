@@ -15,6 +15,9 @@ export const metadata: Metadata = {
 export default async function RankingPage() {
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  const isAdmin = user?.email === 'vidalaugusto47@gmail.com'
+
   const { data: profiles } = await supabase.from('profiles').select('id, username, avatar_url')
   const { data: wins } = await supabase.from('wins').select('player_id, prize_type')
   const { data: roomPlayers } = await supabase.from('room_players').select('player_id, room_id')
@@ -48,7 +51,7 @@ export default async function RankingPage() {
       <Navbar />
       <main className="max-w-lg mx-auto px-4 py-8">
         <h1 className="text-2xl font-black mb-6 text-center text-sky-700">🏆 Ranking</h1>
-        <RankingClient stats={stats} />
+        <RankingClient stats={stats} isAdmin={isAdmin} />
       </main>
     </div>
   )

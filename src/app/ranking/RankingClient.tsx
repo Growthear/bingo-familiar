@@ -1,9 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ChevronDownIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { resetRanking } from '@/app/actions'
+import { toast } from 'sonner'
 
 interface PlayerStat {
   id: string
@@ -15,22 +19,70 @@ interface PlayerStat {
   gamesPlayed: number
 }
 
-export default function RankingClient({ stats }: { stats: PlayerStat[] }) {
+export default function RankingClient({ stats, isAdmin }: { stats: PlayerStat[]; isAdmin: boolean }) {
+  const router = useRouter()
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState(false)
+  const [resetting, setResetting] = useState(false)
 
   const toggle = (id: string) => setExpandedId(prev => prev === id ? null : id)
 
+  const handleReset = async () => {
+    setResetting(true)
+    const result = await resetRanking()
+    if (result.error) {
+      toast.error(result.error)
+      setResetting(false)
+    } else {
+      toast.success('Ranking reiniciado')
+      setConfirming(false)
+      setResetting(false)
+      router.refresh()
+    }
+  }
+
+  const adminButton = isAdmin && (
+    <div className="mb-6">
+      {!confirming ? (
+        <Button
+          variant="outline"
+          className="w-full border-red-200 text-red-500 hover:bg-red-50"
+          onClick={() => setConfirming(true)}
+        >
+          🗑️ Reiniciar ranking
+        </Button>
+      ) : (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 space-y-2">
+          <p className="text-sm font-semibold text-red-700 text-center">¿Borrar todas las partidas?</p>
+          <p className="text-xs text-red-500 text-center">Los perfiles se conservan, solo se borran los resultados.</p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => setConfirming(false)} disabled={resetting}>
+              Cancelar
+            </Button>
+            <Button size="sm" className="flex-1 bg-red-500 hover:bg-red-600 text-white" onClick={handleReset} disabled={resetting}>
+              {resetting ? 'Borrando...' : 'Sí, reiniciar'}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   if (stats.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="text-5xl mb-3">🎱</div>
-        <p className="text-muted-foreground">Todavía no hay partidas jugadas.</p>
-      </div>
+      <>
+        {adminButton}
+        <div className="text-center py-12">
+          <div className="text-5xl mb-3">🎱</div>
+          <p className="text-muted-foreground">Todavía no hay partidas jugadas.</p>
+        </div>
+      </>
     )
   }
 
   return (
     <div className="space-y-2">
+      {adminButton}
       {stats.map((s, i) => {
         const isExpanded = expandedId === s.id
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null

@@ -151,6 +151,17 @@ export default function GameClient({
           pausedForPrizeRef.current = false
           setPrizeCountdown(null)
         }
+        if (newRoom.status === 'waiting' && prev !== 'waiting') {
+          setDrawnNumbers([])
+          setWins([])
+          setMarkedNumbers({})
+          setBingoCountdown(null)
+          setPrizeCountdown(null)
+          setCelebratingWin(null)
+          bingoWonRef.current = false
+          pausedForPrizeRef.current = false
+          router.refresh()
+        }
         setRoom(newRoom)
       })
       .on('postgres_changes', {
@@ -192,7 +203,7 @@ export default function GameClient({
           setBingoCountdown(5)
         } else if (win.prize_type !== 'bingo' && !pausedForPrizeRef.current) {
           pausedForPrizeRef.current = true
-          setPrizeCountdown(5)
+          setPrizeCountdown(10)
           if (isHost) {
             supabase.from('rooms').update({ status: 'paused' }).eq('id', room.id)
           }
@@ -514,8 +525,8 @@ export default function GameClient({
           </div>
         )}
 
-        {/* Premio terno/línea — pausa breve */}
-        {prizeCountdown !== null && prizeCountdown > 0 && (
+        {/* Premio terno/línea — pausa */}
+        {room.status === 'paused' && prizeCountdown !== null && prizeCountdown > 0 && (
           <div className="bg-sky-50 border-2 border-sky-400 rounded-xl px-4 py-3 text-center">
             <p className="font-black text-sky-700 text-lg">🎉 ¡Premio cantado!</p>
             <p className="text-sm text-sky-600">

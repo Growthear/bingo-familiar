@@ -16,10 +16,15 @@ create table public.rooms (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
   host_id uuid references public.profiles(id) on delete cascade not null,
-  status text not null default 'waiting' check (status in ('waiting', 'playing', 'finished')),
+  status text not null default 'waiting' check (status in ('waiting', 'playing', 'paused', 'finished', 'cancelled')),
   interval_seconds integer not null default 5 check (interval_seconds between 3 and 60),
   cards_per_player integer not null default 1 check (cards_per_player between 1 and 6),
   current_prize text check (current_prize in ('terno', 'linea', 'bingo')),
+  show_drawn boolean not null default true,
+  price_per_card integer not null default 0,
+  terno_enabled boolean not null default true,
+  linea_enabled boolean not null default true,
+  shared_prizes boolean not null default false,
   created_at timestamptz default now() not null,
   started_at timestamptz,
   finished_at timestamptz
@@ -57,6 +62,7 @@ create table public.wins (
   player_id uuid references public.profiles(id) on delete cascade not null,
   card_id uuid references public.bingo_cards(id) on delete cascade not null,
   prize_type text not null check (prize_type in ('terno', 'linea', 'bingo')),
+  draw_order_at_claim integer,
   won_at timestamptz default now() not null,
   unique(room_id, player_id, prize_type)
 );
@@ -191,6 +197,7 @@ declare
   v_drawn_count integer;
   v_total_count integer;
   v_is_valid boolean := false;
+  v_draw_order integer;
 begin
   v_player_id := auth.uid();
 
@@ -203,6 +210,9 @@ begin
   end if;
 
   select array_agg(number) into v_drawn_nums
+  from public.drawn_numbers where room_id = p_room_id;
+
+  select coalesce(max(draw_order), 0) into v_draw_order
   from public.drawn_numbers where room_id = p_room_id;
 
   if p_prize_type = 'terno' then
@@ -260,8 +270,14 @@ begin
     return jsonb_build_object('success', false, 'error', 'Ya ganaste este premio');
   end if;
 
-  insert into public.wins (room_id, player_id, card_id, prize_type)
-  values (p_room_id, v_player_id, p_card_id, p_prize_type);
+  insert into public.wins (room_id, player_id, card_id, prize_type, draw_order_at_claim)
+  values (p_room_id, v_player_id, p_card_id, p_prize_type, v_draw_order);
+
+  -- Pausar la sala para terno/línea de forma atómica (antes de que dispare el realtime)
+  if p_prize_type in ('terno', 'linea') then
+    update public.rooms set status = 'paused'
+    where id = p_room_id and status = 'playing';
+  end if;
 
   return jsonb_build_object('success', true);
 end;
