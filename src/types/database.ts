@@ -195,6 +195,10 @@ export type Database = {
         Args: { p_room_id: string; p_card_id: string; p_prize_type: string }
         Returns: Json
       }
+      reset_ranking_admin: {
+        Args: Record<string, never>
+        Returns: void
+      }
     }
     Enums: {
       [_ in never]: never
