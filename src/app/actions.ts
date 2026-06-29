@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { generateMultipleCards } from '@/lib/bingo/cardGenerator'
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -110,6 +111,7 @@ export async function resetRanking(): Promise<{ error?: string }> {
   if (!user || user.email !== 'vidalaugusto47@gmail.com') return { error: 'No autorizado' }
   const { error } = await supabase.rpc('reset_ranking_admin')
   if (error) return { error: error.message }
+  revalidatePath('/ranking')
   return {}
 }
 
