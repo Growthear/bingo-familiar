@@ -108,7 +108,8 @@ export async function resetRanking(): Promise<{ error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || user.email !== 'vidalaugusto47@gmail.com') return { error: 'No autorizado' }
-  await supabase.from('rooms').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  const { error } = await supabase.rpc('reset_ranking_admin')
+  if (error) return { error: error.message }
   return {}
 }
 
