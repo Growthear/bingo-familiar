@@ -125,9 +125,9 @@ export async function joinRoom(_: unknown, formData: FormData) {
   const { data: room } = await supabase.from('rooms').select('*').eq('code', code).single()
 
   if (!room) return { error: 'Sala no encontrada. Revisá el código.' }
-  if (room.status === 'finished') return { error: 'Esa partida ya terminó.' }
-  if (room.status === 'playing') return { error: 'La partida ya empezó. Esperá la próxima.' }
+  if (room.status === 'cancelled') return { error: 'Esta sala fue cancelada.' }
 
+  // Check if already in the room — allow rejoining regardless of game state
   const { data: existing } = await supabase
     .from('room_players')
     .select('id')
@@ -135,10 +135,14 @@ export async function joinRoom(_: unknown, formData: FormData) {
     .eq('player_id', user.id)
     .single()
 
-  if (!existing) {
-    await supabase.from('room_players').insert({ room_id: room.id, player_id: user.id })
-    await insertCards(supabase, room.id, user.id, room.cards_per_player)
-  }
+  if (existing) redirect(`/room/${code}`)
+
+  // New player — block if game already started
+  if (room.status === 'finished') return { error: 'Esa partida ya terminó.' }
+  if (room.status === 'playing' || room.status === 'paused') return { error: 'La partida ya empezó. Esperá la próxima.' }
+
+  await supabase.from('room_players').insert({ room_id: room.id, player_id: user.id })
+  await insertCards(supabase, room.id, user.id, room.cards_per_player)
 
   redirect(`/room/${code}`)
 }

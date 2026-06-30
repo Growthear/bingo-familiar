@@ -198,6 +198,8 @@ declare
   v_total_count integer;
   v_is_valid boolean := false;
   v_draw_order integer;
+  v_shared_prizes boolean;
+  v_first_claim_order integer;
 begin
   v_player_id := auth.uid();
 
@@ -261,6 +263,25 @@ begin
 
   if not v_is_valid then
     return jsonb_build_object('success', false, 'error', 'Premio no válido todavía');
+  end if;
+
+  -- Validate prize availability at DB level (client-side checks can be bypassed by late joiners)
+  select shared_prizes into v_shared_prizes from public.rooms where id = p_room_id;
+
+  if not v_shared_prizes then
+    -- Non-shared mode: only first claimer wins each prize
+    if exists (select 1 from public.wins where room_id = p_room_id and prize_type = p_prize_type) then
+      return jsonb_build_object('success', false, 'error', 'El premio ya fue cantado');
+    end if;
+  else
+    -- Shared mode: multiple winners allowed but only within the same draw window
+    select draw_order_at_claim into v_first_claim_order
+    from public.wins where room_id = p_room_id and prize_type = p_prize_type
+    order by won_at limit 1;
+
+    if v_first_claim_order is not null and v_draw_order > v_first_claim_order then
+      return jsonb_build_object('success', false, 'error', 'El premio ya fue cantado');
+    end if;
   end if;
 
   if exists (

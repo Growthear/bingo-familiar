@@ -232,7 +232,13 @@ export default function GameClient({
           setCelebratingWin({ prize: win.prize_type as PrizeType, amount })
         }
       })
-      .subscribe()
+      .subscribe(async (status) => {
+        // Re-fetch wins once subscription is confirmed to catch events missed during page load
+        if (status === 'SUBSCRIBED' && (roomStatusRef.current === 'playing' || roomStatusRef.current === 'paused')) {
+          const { data } = await supabase.from('wins').select('*').eq('room_id', room.id)
+          if (data) setWins(data)
+        }
+      })
 
     return () => { supabase.removeChannel(channel) }
   }, [room.id]) // eslint-disable-line react-hooks/exhaustive-deps
