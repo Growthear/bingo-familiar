@@ -84,6 +84,7 @@ export default function GameClient({
   const bingoWonRef = useRef(false)
   const pausedForPrizeRef = useRef(false)
   const prevStatusRef = useRef(room.status)
+  const roomStatusRef = useRef(room.status)
 
   useEffect(() => {
     setSoundOn(isSoundEnabled())
@@ -102,6 +103,7 @@ export default function GameClient({
   // Refs to avoid stale closures in realtime handlers
   const playersRef = useRef(players)
   useEffect(() => { playersRef.current = players }, [players])
+  useEffect(() => { roomStatusRef.current = room.status }, [room.status])
 
   const isHost = currentUser.id === room.host_id
   const drawnSet = new Set(drawnNumbers)
@@ -161,6 +163,7 @@ export default function GameClient({
           setCelebratingWin(null)
           bingoWonRef.current = false
           pausedForPrizeRef.current = false
+          setRestarting(false)
           const { data: newCards } = await supabase
             .from('bingo_cards')
             .select('*')
@@ -194,6 +197,9 @@ export default function GameClient({
         filter: `room_id=eq.${room.id}`,
       }, (payload) => {
         const win = payload.new as Win
+        // Ignore stale events from a previous game that arrive after a restart
+        const isGameActive = roomStatusRef.current === 'playing' || roomStatusRef.current === 'paused'
+        if (!isGameActive) return
         setWins(prev => [...prev, win])
 
         const winner = playersRef.current.find(p => p.id === win.player_id) ??
@@ -258,7 +264,7 @@ export default function GameClient({
         await supabase.from('rooms').update({
           status: 'finished',
           finished_at: new Date().toISOString(),
-        }).eq('id', room.id)
+        }).eq('id', room.id).eq('status', 'playing')
       }
     }, room.interval_seconds * 1000)
 
@@ -269,7 +275,8 @@ export default function GameClient({
   useEffect(() => {
     if (bingoCountdown === null) return
     if (bingoCountdown === 0) {
-      if (isHost) finishGame()
+      const gameActive = roomStatusRef.current === 'playing' || roomStatusRef.current === 'paused'
+      if (isHost && gameActive) finishGame()
       return
     }
     const t = setTimeout(() => setBingoCountdown(n => (n ?? 1) - 1), 1000)
@@ -282,7 +289,7 @@ export default function GameClient({
     if (prizeCountdown === 0) {
       pausedForPrizeRef.current = false
       setPrizeCountdown(null)
-      if (isHost) {
+      if (isHost && roomStatusRef.current === 'paused') {
         supabase.from('rooms').update({ status: 'playing' }).eq('id', room.id)
       }
       return
@@ -340,7 +347,7 @@ export default function GameClient({
     const { error } = await supabase.from('rooms').update({
       status: 'finished',
       finished_at: new Date().toISOString(),
-    }).eq('id', room.id)
+    }).eq('id', room.id).in('status', ['playing', 'paused'])
     if (error) toast.error('No se pudo finalizar')
   }
 
