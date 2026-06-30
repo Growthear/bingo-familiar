@@ -59,6 +59,7 @@ export default function GameClient({
 
   const [room, setRoom] = useState(initialRoom)
   const [players, setPlayers] = useState(initialPlayers)
+  const [currentCards, setCurrentCards] = useState(cards)
   const [drawnNumbers, setDrawnNumbers] = useState<number[]>(
     [...initialDrawnNumbers].sort((a, b) => a.draw_order - b.draw_order).map(d => d.number)
   )
@@ -141,7 +142,7 @@ export default function GameClient({
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'rooms',
         filter: `id=eq.${room.id}`,
-      }, (payload) => {
+      }, async (payload) => {
         const newRoom = payload.new as Room
         const prev = prevStatusRef.current
         prevStatusRef.current = newRoom.status
@@ -160,7 +161,13 @@ export default function GameClient({
           setCelebratingWin(null)
           bingoWonRef.current = false
           pausedForPrizeRef.current = false
-          router.refresh()
+          const { data: newCards } = await supabase
+            .from('bingo_cards')
+            .select('*')
+            .eq('room_id', room.id)
+            .eq('player_id', currentUser.id)
+            .order('card_number')
+          if (newCards) setCurrentCards(newCards)
         }
         setRoom(newRoom)
       })
@@ -592,9 +599,9 @@ export default function GameClient({
 
         {/* Cards stacked vertically */}
         <div className="flex flex-col gap-5">
-          {cards.map((card, i) => (
+          {currentCards.map((card, i) => (
             <div key={card.id} className="flex flex-col gap-2">
-              {cards.length > 1 && (
+              {currentCards.length > 1 && (
                 <p className="text-xs font-bold text-sky-600 uppercase tracking-wider">Cartón {i + 1}</p>
               )}
               <BingoCardComponent
