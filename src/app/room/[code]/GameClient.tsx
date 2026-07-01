@@ -77,6 +77,7 @@ export default function GameClient({
   const [vibrateOn, setVibrateOn] = useState(true)
   const [voiceOn, setVoiceOn] = useState(true)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  const [wasKicked, setWasKicked] = useState(false)
   const [isLeaving, startLeaving] = useTransition()
   const [isPausingOrResuming, startPauseResume] = useTransition()
   const [bingoCountdown, setBingoCountdown] = useState<number | null>(null)
@@ -215,8 +216,7 @@ export default function GameClient({
       }, (payload) => {
         const leftId = (payload.old as { player_id: string }).player_id
         if (leftId === currentUser.id) {
-          toast.info('El host te expulsó de la sala')
-          router.push('/')
+          setWasKicked(true)
           return
         }
         setPlayers(prev => prev.filter(p => p.id !== leftId))
@@ -911,6 +911,26 @@ export default function GameClient({
               </Button>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Kicked modal ──────────────────────────────────────────────────── */}
+      <Dialog open={wasKicked} onOpenChange={() => {}}>
+        <DialogContent showCloseButton={false} className="text-center max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-red-600">
+              😔 Fuiste expulsado
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            El host te removió de la sala.
+          </p>
+          <Button
+            className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold mt-2"
+            onClick={() => router.push('/')}
+          >
+            Volver al inicio
+          </Button>
         </DialogContent>
       </Dialog>
     </div>

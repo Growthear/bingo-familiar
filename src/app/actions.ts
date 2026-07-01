@@ -134,8 +134,15 @@ export async function kickPlayer(roomId: string, playerId: string): Promise<{ er
   if (room.status !== 'waiting') return { error: 'Solo se puede expulsar en la sala de espera' }
   if (playerId === user.id) return { error: 'No podés expulsarte a vos mismo' }
 
-  await supabase.from('bingo_cards').delete().eq('room_id', roomId).eq('player_id', playerId)
-  await supabase.from('room_players').delete().eq('room_id', roomId).eq('player_id', playerId)
+  const { error: cardsError } = await supabase
+    .from('bingo_cards').delete().eq('room_id', roomId).eq('player_id', playerId)
+  if (cardsError) return { error: `Error al borrar cartones: ${cardsError.message}` }
+
+  // Use .select() so Supabase returns the deleted rows — RLS silently returns [] without error
+  const { data: deleted, error: rpError } = await supabase
+    .from('room_players').delete().eq('room_id', roomId).eq('player_id', playerId).select()
+  if (rpError) return { error: `Error al expulsar: ${rpError.message}` }
+  if (!deleted || deleted.length === 0) return { error: 'No se pudo expulsar (permiso denegado). Corré el SQL de migración en Supabase.' }
 
   return {}
 }
