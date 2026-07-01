@@ -107,6 +107,14 @@ create policy "Players can see own cards" on public.bingo_cards
   for select using (auth.uid() = player_id);
 create policy "Players can insert own cards" on public.bingo_cards
   for insert with check (auth.uid() = player_id);
+create policy "Host can insert cards for room" on public.bingo_cards
+  for insert with check (
+    auth.uid() = (select host_id from public.rooms where id = room_id)
+  );
+create policy "Host can delete room cards" on public.bingo_cards
+  for delete using (
+    auth.uid() = (select host_id from public.rooms where id = room_id)
+  );
 
 -- drawn_numbers
 create policy "Drawn numbers viewable by authenticated" on public.drawn_numbers
@@ -115,12 +123,20 @@ create policy "Host can insert drawn numbers" on public.drawn_numbers
   for insert with check (
     auth.uid() = (select host_id from public.rooms where id = room_id)
   );
+create policy "Host can delete drawn numbers" on public.drawn_numbers
+  for delete using (
+    auth.uid() = (select host_id from public.rooms where id = room_id)
+  );
 
 -- wins
 create policy "Wins viewable by authenticated" on public.wins
   for select using (auth.role() = 'authenticated');
 create policy "Players can claim own wins" on public.wins
   for insert with check (auth.uid() = player_id);
+create policy "Host can delete wins" on public.wins
+  for delete using (
+    auth.uid() = (select host_id from public.rooms where id = room_id)
+  );
 
 -- ─────────────────────────────────────────────
 -- AUTO-CREATE PROFILE ON SIGNUP

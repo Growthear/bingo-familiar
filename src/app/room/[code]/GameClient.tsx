@@ -66,7 +66,7 @@ export default function GameClient({
   const [wins, setWins] = useState(initialWins)
   const [markedNumbers, setMarkedNumbers] = useState<Record<string, Set<number>>>({})
   const [historyOpen, setHistoryOpen] = useState(false)
-  const [claimingPrize, setClaimingPrize] = useState(false)
+  const [claimingPrize, setClaimingPrize] = useState<PrizeType | null>(null)
   const [celebratingWin, setCelebratingWin] = useState<{ prize: PrizeType; amount: number } | null>(null)
   const [pozOpen, setPozOpen] = useState(false)
   const [playersOpen, setPlayersOpen] = useState(false)
@@ -78,6 +78,7 @@ export default function GameClient({
   const [voiceOn, setVoiceOn] = useState(true)
   const [confirmLeave, setConfirmLeave] = useState(false)
   const [isLeaving, startLeaving] = useTransition()
+  const [isPausingOrResuming, startPauseResume] = useTransition()
   const [bingoCountdown, setBingoCountdown] = useState<number | null>(null)
   const [prizeCountdown, setPrizeCountdown] = useState<number | null>(null)
   const drawIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -171,6 +172,25 @@ export default function GameClient({
             .eq('player_id', currentUser.id)
             .order('card_number')
           if (newCards) setCurrentCards(newCards)
+        }
+        // Safety net: if the 'waiting' event was missed (e.g. brief disconnect),
+        // reset everything when the new game starts so players don't see stale state.
+        if (newRoom.status === 'playing' && (prev === 'waiting' || prev === 'finished')) {
+          setDrawnNumbers([])
+          setWins([])
+          setMarkedNumbers({})
+          setBingoCountdown(null)
+          setPrizeCountdown(null)
+          setCelebratingWin(null)
+          bingoWonRef.current = false
+          pausedForPrizeRef.current = false
+          const { data: freshCards } = await supabase
+            .from('bingo_cards')
+            .select('*')
+            .eq('room_id', room.id)
+            .eq('player_id', currentUser.id)
+            .order('card_number')
+          if (freshCards && freshCards.length > 0) setCurrentCards(freshCards)
         }
         setRoom(newRoom)
       })
@@ -326,27 +346,31 @@ export default function GameClient({
       return
     }
 
-    setClaimingPrize(true)
+    setClaimingPrize(prize)
     const { data, error } = await supabase.rpc('claim_prize', {
       p_room_id: room.id,
       p_card_id: card.id,
       p_prize_type: prize,
     })
-    setClaimingPrize(false)
+    setClaimingPrize(null)
 
     if (error) { toast.error('Error al reclamar el premio'); return }
     const result = data as { success: boolean; error?: string }
     if (!result.success) toast.error(result.error ?? 'Premio inválido')
   }, [drawnSet, claimedPrizes, room.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pauseGame = async () => {
-    const { error } = await supabase.from('rooms').update({ status: 'paused' }).eq('id', room.id)
-    if (error) toast.error('No se pudo pausar')
+  const pauseGame = () => {
+    startPauseResume(async () => {
+      const { error } = await supabase.from('rooms').update({ status: 'paused' }).eq('id', room.id)
+      if (error) toast.error('No se pudo pausar')
+    })
   }
 
-  const resumeGame = async () => {
-    const { error } = await supabase.from('rooms').update({ status: 'playing' }).eq('id', room.id)
-    if (error) toast.error('No se pudo reanudar')
+  const resumeGame = () => {
+    startPauseResume(async () => {
+      const { error } = await supabase.from('rooms').update({ status: 'playing' }).eq('id', room.id)
+      if (error) toast.error('No se pudo reanudar')
+    })
   }
 
   const finishGame = async () => {
@@ -577,15 +601,17 @@ export default function GameClient({
                 variant="outline"
                 className="flex-1 border-amber-300 text-amber-700 hover:bg-amber-50"
                 onClick={pauseGame}
+                disabled={isPausingOrResuming}
               >
-                ⏸ Pausar
+                {isPausingOrResuming ? 'Pausando...' : '⏸ Pausar'}
               </Button>
             ) : (
               <Button
                 className="flex-1 bg-green-500 hover:bg-green-600 text-white"
                 onClick={resumeGame}
+                disabled={isPausingOrResuming}
               >
-                ▶ Reanudar
+                {isPausingOrResuming ? 'Reanudando...' : '▶ Reanudar'}
               </Button>
             )}
             <Button
@@ -629,7 +655,8 @@ export default function GameClient({
                 onClaim={claimPrize}
                 wonPrizes={wonPrizes}
                 claimedPrizes={claimedPrizes}
-                disabled={claimingPrize}
+                disabled={claimingPrize !== null}
+                claimingPrize={claimingPrize}
                 ternoEnabled={room.terno_enabled}
                 lineaEnabled={room.linea_enabled}
                 sharedPrizes={room.shared_prizes}
@@ -886,6 +913,7 @@ function PrizeButtons({
   wonPrizes,
   claimedPrizes,
   disabled,
+  claimingPrize,
   ternoEnabled,
   lineaEnabled,
   sharedPrizes,
@@ -897,6 +925,7 @@ function PrizeButtons({
   wonPrizes: Set<string>
   claimedPrizes: Set<string>
   disabled: boolean
+  claimingPrize: PrizeType | null
   ternoEnabled: boolean
   lineaEnabled: boolean
   sharedPrizes: boolean
@@ -915,8 +944,11 @@ function PrizeButtons({
         const someoneWon = claimedPrizes.has(prize) && !iWon && !windowOpen
         const isDisabled = disabled || (iWon ? true : someoneWon)
 
+        const isClaiming = claimingPrize === prize
         const label = iWon
           ? `✓ ${PRIZE_LABELS[prize]}`
+          : isClaiming
+          ? 'Reclamando...'
           : windowOpen
           ? `¡También! 🤝`
           : someoneWon
