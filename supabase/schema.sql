@@ -25,6 +25,7 @@ create table public.rooms (
   terno_enabled boolean not null default true,
   linea_enabled boolean not null default true,
   shared_prizes boolean not null default false,
+  game_number integer not null default 1,
   created_at timestamptz default now() not null,
   started_at timestamptz,
   finished_at timestamptz
@@ -63,8 +64,9 @@ create table public.wins (
   card_id uuid references public.bingo_cards(id) on delete cascade not null,
   prize_type text not null check (prize_type in ('terno', 'linea', 'bingo')),
   draw_order_at_claim integer,
+  game_number integer not null default 1,
   won_at timestamptz default now() not null,
-  unique(room_id, player_id, prize_type)
+  unique(room_id, player_id, prize_type, game_number)
 );
 
 -- ─────────────────────────────────────────────
@@ -133,10 +135,6 @@ create policy "Wins viewable by authenticated" on public.wins
   for select using (auth.role() = 'authenticated');
 create policy "Players can claim own wins" on public.wins
   for insert with check (auth.uid() = player_id);
-create policy "Host can delete wins" on public.wins
-  for delete using (
-    auth.uid() = (select host_id from public.rooms where id = room_id)
-  );
 
 -- ─────────────────────────────────────────────
 -- AUTO-CREATE PROFILE ON SIGNUP
@@ -216,6 +214,7 @@ declare
   v_draw_order integer;
   v_shared_prizes boolean;
   v_first_claim_order integer;
+  v_game_number integer;
 begin
   v_player_id := auth.uid();
 
@@ -281,18 +280,23 @@ begin
     return jsonb_build_object('success', false, 'error', 'Premio no válido todavía');
   end if;
 
-  -- Validate prize availability at DB level (client-side checks can be bypassed by late joiners)
-  select shared_prizes into v_shared_prizes from public.rooms where id = p_room_id;
+  -- Get current game context (game_number scopes all checks to the current game only)
+  select shared_prizes, game_number into v_shared_prizes, v_game_number
+  from public.rooms where id = p_room_id;
 
   if not v_shared_prizes then
-    -- Non-shared mode: only first claimer wins each prize
-    if exists (select 1 from public.wins where room_id = p_room_id and prize_type = p_prize_type) then
+    -- Non-shared mode: only first claimer wins each prize (within current game)
+    if exists (
+      select 1 from public.wins
+      where room_id = p_room_id and prize_type = p_prize_type and game_number = v_game_number
+    ) then
       return jsonb_build_object('success', false, 'error', 'El premio ya fue cantado');
     end if;
   else
     -- Shared mode: multiple winners allowed but only within the same draw window
     select draw_order_at_claim into v_first_claim_order
-    from public.wins where room_id = p_room_id and prize_type = p_prize_type
+    from public.wins
+    where room_id = p_room_id and prize_type = p_prize_type and game_number = v_game_number
     order by won_at limit 1;
 
     if v_first_claim_order is not null and v_draw_order > v_first_claim_order then
@@ -303,12 +307,13 @@ begin
   if exists (
     select 1 from public.wins
     where room_id = p_room_id and player_id = v_player_id and prize_type = p_prize_type
+    and game_number = v_game_number
   ) then
     return jsonb_build_object('success', false, 'error', 'Ya ganaste este premio');
   end if;
 
-  insert into public.wins (room_id, player_id, card_id, prize_type, draw_order_at_claim)
-  values (p_room_id, v_player_id, p_card_id, p_prize_type, v_draw_order);
+  insert into public.wins (room_id, player_id, card_id, prize_type, draw_order_at_claim, game_number)
+  values (p_room_id, v_player_id, p_card_id, p_prize_type, v_draw_order, v_game_number);
 
   -- Pausar la sala para terno/línea de forma atómica (antes de que dispare el realtime)
   if p_prize_type in ('terno', 'linea') then

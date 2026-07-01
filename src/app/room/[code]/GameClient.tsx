@@ -86,6 +86,7 @@ export default function GameClient({
   const pausedForPrizeRef = useRef(false)
   const prevStatusRef = useRef(room.status)
   const roomStatusRef = useRef(room.status)
+  const gameNumberRef = useRef(room.game_number ?? 1)
 
   useEffect(() => {
     setSoundOn(isSoundEnabled())
@@ -105,6 +106,7 @@ export default function GameClient({
   const playersRef = useRef(players)
   useEffect(() => { playersRef.current = players }, [players])
   useEffect(() => { roomStatusRef.current = room.status }, [room.status])
+  useEffect(() => { gameNumberRef.current = room.game_number ?? 1 }, [room.game_number])
 
   const isHost = currentUser.id === room.host_id
   const drawnSet = new Set(drawnNumbers)
@@ -253,9 +255,10 @@ export default function GameClient({
         }
       })
       .subscribe(async (status) => {
-        // Re-fetch wins once subscription is confirmed to catch events missed during page load
+        // Re-fetch wins once subscription is confirmed to catch events missed during page load.
+        // Filter by game_number so wins from previous games in the same room don't bleed in.
         if (status === 'SUBSCRIBED' && (roomStatusRef.current === 'playing' || roomStatusRef.current === 'paused')) {
-          const { data } = await supabase.from('wins').select('*').eq('room_id', room.id)
+          const { data } = await supabase.from('wins').select('*').eq('room_id', room.id).eq('game_number', gameNumberRef.current)
           if (data) setWins(data)
         }
       })

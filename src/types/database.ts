@@ -43,6 +43,7 @@ export type Database = {
           terno_enabled: boolean
           linea_enabled: boolean
           shared_prizes: boolean
+          game_number: number
           created_at: string
           started_at: string | null
           finished_at: string | null
@@ -60,6 +61,7 @@ export type Database = {
           terno_enabled?: boolean
           linea_enabled?: boolean
           shared_prizes?: boolean
+          game_number?: number
           created_at?: string
           started_at?: string | null
           finished_at?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           terno_enabled?: boolean
           linea_enabled?: boolean
           shared_prizes?: boolean
+          game_number?: number
           started_at?: string | null
           finished_at?: string | null
         }
@@ -161,6 +164,7 @@ export type Database = {
           card_id: string
           prize_type: PrizeType
           draw_order_at_claim: number | null
+          game_number: number
           won_at: string
         }
         Insert: {
@@ -170,6 +174,7 @@ export type Database = {
           card_id: string
           prize_type: PrizeType
           draw_order_at_claim?: number | null
+          game_number?: number
           won_at?: string
         }
         Update: {

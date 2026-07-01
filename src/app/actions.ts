@@ -71,7 +71,7 @@ export async function restartRoom(roomId: string): Promise<{ error?: string }> {
 
   const { data: room } = await supabase
     .from('rooms')
-    .select('host_id, cards_per_player')
+    .select('host_id, cards_per_player, game_number')
     .eq('id', roomId)
     .single()
 
@@ -84,8 +84,7 @@ export async function restartRoom(roomId: string): Promise<{ error?: string }> {
 
   if (!roomPlayers) return { error: 'Error al obtener jugadores' }
 
-  // Limpiar datos de la partida anterior
-  await supabase.from('wins').delete().eq('room_id', roomId)
+  // Limpiar cartones y números (los wins se preservan para el ranking histórico)
   await supabase.from('drawn_numbers').delete().eq('room_id', roomId)
   await supabase.from('bingo_cards').delete().eq('room_id', roomId)
 
@@ -94,12 +93,13 @@ export async function restartRoom(roomId: string): Promise<{ error?: string }> {
     await insertCards(supabase, roomId, player_id, room.cards_per_player)
   }
 
-  // Volver a waiting — dispara el realtime para todos
+  // Volver a waiting e incrementar game_number — dispara el realtime para todos
   await supabase.from('rooms').update({
     status: 'waiting',
     started_at: null,
     finished_at: null,
     current_prize: null,
+    game_number: (room.game_number ?? 1) + 1,
   }).eq('id', roomId)
 
   return {}
