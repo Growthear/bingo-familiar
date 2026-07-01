@@ -19,7 +19,8 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { restartRoom } from '@/app/actions'
+import { restartRoom, checkAchievements } from '@/app/actions'
+import { ACHIEVEMENT_MAP } from '@/lib/achievements'
 import { vibrate, isVibrationEnabled, setVibrationEnabled } from '@/lib/vibrate'
 import { playSound, isSoundEnabled, setSoundEnabled } from '@/lib/sounds'
 import { speakNumber, speakText, isVoiceEnabled, setVoiceEnabled, unlockVoice } from '@/lib/voice'
@@ -179,6 +180,9 @@ export default function GameClient({
         }
         // Safety net: if the 'waiting' event was missed (e.g. brief disconnect),
         // reset everything when the new game starts so players don't see stale state.
+        if (newRoom.status === 'finished' && prev !== 'finished') {
+          notifyAchievements()
+        }
         if (newRoom.status === 'playing' && (prev === 'waiting' || prev === 'finished')) {
           setDrawnNumbers([])
           setWins([])
@@ -344,6 +348,20 @@ export default function GameClient({
     })
   }, [])
 
+  const notifyAchievements = useCallback(async () => {
+    const { newIds } = await checkAchievements()
+    for (const id of newIds) {
+      const a = ACHIEVEMENT_MAP[id as keyof typeof ACHIEVEMENT_MAP]
+      if (!a) continue
+      setTimeout(() => {
+        toast.success(`${a.icon} ¡Logro desbloqueado!`, {
+          description: `${a.name}: ${a.description}`,
+          duration: 6000,
+        })
+      }, newIds.indexOf(id) * 800)
+    }
+  }, [])
+
   const claimPrize = useCallback(async (card: BingoCard, prize: 'terno' | 'linea' | 'bingo') => {
     if (claimedPrizes.has(prize)) {
       toast.info(`El ${PRIZE_LABELS[prize]} ya fue cantado`)
@@ -366,8 +384,9 @@ export default function GameClient({
 
     if (error) { toast.error('Error al reclamar el premio'); return }
     const result = data as { success: boolean; error?: string }
-    if (!result.success) toast.error(result.error ?? 'Premio inválido')
-  }, [drawnSet, claimedPrizes, room.id]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!result.success) { toast.error(result.error ?? 'Premio inválido'); return }
+    notifyAchievements()
+  }, [drawnSet, claimedPrizes, room.id, notifyAchievements]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const pauseGame = () => {
     startPauseResume(async () => {

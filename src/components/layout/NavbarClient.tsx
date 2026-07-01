@@ -93,6 +93,9 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
       <div className="hidden sm:flex items-center gap-3">
         {profile ? (
           <>
+            <Link href="/achievements" className="text-sm text-muted-foreground hover:text-sky-600 transition-colors">
+              🏅 Logros
+            </Link>
             <Link href="/ranking" className="text-sm text-muted-foreground hover:text-sky-600 transition-colors">
               🏆 Ranking
             </Link>
@@ -170,6 +173,14 @@ export default function NavbarClient({ profile }: NavbarClientProps) {
                 className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100 transition-colors"
               >
                 <span className="text-xl w-7 text-center">🏠</span> Inicio
+              </Link>
+
+              <Link
+                href="/achievements"
+                onClick={closeMenu}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-sky-50 text-sm font-medium text-gray-700 active:bg-sky-100 transition-colors"
+              >
+                <span className="text-xl w-7 text-center">🏅</span> Logros
               </Link>
 
               <Link

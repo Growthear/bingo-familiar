@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +16,8 @@ import { PRIZE_LABELS } from '@/lib/bingo/gameLogic'
 import { isVibrationEnabled, setVibrationEnabled, vibrate } from '@/lib/vibrate'
 import { isSoundEnabled, setSoundEnabled, playSound } from '@/lib/sounds'
 import { isVoiceEnabled, setVoiceEnabled } from '@/lib/voice'
+import { checkAchievements } from '@/app/actions'
+import { ACHIEVEMENT_MAP } from '@/lib/achievements'
 
 interface ProfileClientProps {
   initialProfile: Profile
@@ -45,6 +48,20 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
     setSoundOn(isSoundEnabled())
     setVoiceOn(isVoiceEnabled())
   }, [])
+
+  const notifyAchievements = async () => {
+    const { newIds } = await checkAchievements()
+    for (const id of newIds) {
+      const a = ACHIEVEMENT_MAP[id as keyof typeof ACHIEVEMENT_MAP]
+      if (!a) continue
+      setTimeout(() => {
+        toast.success(`${a.icon} ¡Logro desbloqueado!`, {
+          description: `${a.name}: ${a.description}`,
+          duration: 6000,
+        })
+      }, newIds.indexOf(id) * 800)
+    }
+  }
 
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -101,6 +118,7 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
       setAvatarUrl(urlWithBust)
       setProfile(prev => ({ ...prev, avatar_url: publicUrl }))
       toast.success('¡Foto de perfil actualizada!')
+      notifyAchievements()
     }
 
     setAvatarPreview(null)
@@ -159,6 +177,7 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
       } else {
         setProfile(prev => ({ ...prev, mp_alias: trimmed || null }))
         toast.success('¡Alias guardado!')
+        notifyAchievements()
       }
     })
   }
@@ -262,6 +281,21 @@ export default function ProfileClient({ initialProfile, initialWins, gamesPlayed
           </div>
         ))}
       </div>
+
+      {/* ── Logros ────────────────────────────────────────────────────── */}
+      <Link
+        href="/achievements"
+        className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 hover:bg-amber-100 active:scale-[0.98] transition-all"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🏅</span>
+          <div>
+            <p className="font-black text-amber-800 text-sm">Mis logros</p>
+            <p className="text-xs text-amber-600">Ver tus badges desbloqueados</p>
+          </div>
+        </div>
+        <span className="text-amber-400 text-lg">›</span>
+      </Link>
 
       {/* ── Editar nombre ──────────────────────────────────────────────── */}
       <Card className="border-sky-200">

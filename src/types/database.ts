@@ -189,6 +189,64 @@ export type Database = {
         }
         Relationships: []
       }
+      achievements: {
+        Row: {
+          id: string
+          name: string
+          description: string
+          icon: string
+          category: string
+        }
+        Insert: {
+          id: string
+          name: string
+          description: string
+          icon: string
+          category: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string
+          icon?: string
+          category?: string
+        }
+        Relationships: []
+      }
+      game_sessions: {
+        Row: {
+          id: string
+          player_id: string
+          room_id: string
+          game_number: number
+          played_at: string
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          room_id: string
+          game_number?: number
+          played_at?: string
+        }
+        Update: never
+        Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          id: string
+          player_id: string
+          achievement_id: string
+          earned_at: string
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          achievement_id: string
+          earned_at?: string
+        }
+        Update: never
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -206,6 +264,10 @@ export type Database = {
         Args: Record<string, never>
         Returns: void
       }
+      check_and_grant_achievements: {
+        Args: { p_player_id: string }
+        Returns: string[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -222,5 +284,8 @@ export type RoomPlayer = Database['public']['Tables']['room_players']['Row']
 export type BingoCard = Database['public']['Tables']['bingo_cards']['Row']
 export type DrawnNumber = Database['public']['Tables']['drawn_numbers']['Row']
 export type Win = Database['public']['Tables']['wins']['Row']
+export type Achievement = Database['public']['Tables']['achievements']['Row']
+export type UserAchievement = Database['public']['Tables']['user_achievements']['Row']
+export type GameSession = Database['public']['Tables']['game_sessions']['Row']
 
 export type BingoGrid = (number | null)[][]

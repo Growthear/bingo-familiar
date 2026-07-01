@@ -62,6 +62,7 @@ export async function createRoom(_: unknown, formData: FormData) {
 
   await supabase.from('room_players').insert({ room_id: room.id, player_id: user.id })
   await insertCards(supabase, room.id, user.id, cardsPerPlayer)
+  await supabase.rpc('check_and_grant_achievements', { p_player_id: user.id })
 
   redirect(`/room/${code}`)
 }
@@ -107,6 +108,14 @@ export async function restartRoom(roomId: string): Promise<{ error?: string }> {
   }).eq('id', roomId)
 
   return {}
+}
+
+export async function checkAchievements(): Promise<{ newIds: string[] }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { newIds: [] }
+  const { data } = await supabase.rpc('check_and_grant_achievements', { p_player_id: user.id })
+  return { newIds: (data as string[]) ?? [] }
 }
 
 export async function resetRanking(): Promise<{ error?: string }> {
