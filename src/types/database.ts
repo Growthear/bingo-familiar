@@ -113,6 +113,7 @@ export type Database = {
           player_id: string
           card_number: number
           numbers: Json
+          game_number: number
           created_at: string
         }
         Insert: {
@@ -121,6 +122,7 @@ export type Database = {
           player_id: string
           card_number: number
           numbers: Json
+          game_number?: number
           created_at?: string
         }
         Update: {

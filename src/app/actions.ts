@@ -17,7 +17,8 @@ async function insertCards(
   supabase: Awaited<ReturnType<typeof createClient>>,
   roomId: string,
   playerId: string,
-  count: number
+  count: number,
+  gameNumber: number = 1
 ) {
   const cards = generateMultipleCards(count)
   for (let i = 0; i < count; i++) {
@@ -26,6 +27,7 @@ async function insertCards(
       player_id: playerId,
       card_number: i + 1,
       numbers: cards[i],
+      game_number: gameNumber,
     })
   }
 }
@@ -84,13 +86,15 @@ export async function restartRoom(roomId: string): Promise<{ error?: string }> {
 
   if (!roomPlayers) return { error: 'Error al obtener jugadores' }
 
-  // Limpiar cartones y números (los wins se preservan para el ranking histórico)
-  await supabase.from('drawn_numbers').delete().eq('room_id', roomId)
-  await supabase.from('bingo_cards').delete().eq('room_id', roomId)
+  const newGameNumber = (room.game_number ?? 1) + 1
 
-  // Generar cartones nuevos para todos los jugadores
+  // Solo borrar números sorteados; cartones viejos se preservan (tienen game_number anterior)
+  // para no romper el historial de wins que los referencian
+  await supabase.from('drawn_numbers').delete().eq('room_id', roomId)
+
+  // Insertar cartones nuevos con el nuevo game_number — cartones viejos quedan en DB sin usarse
   for (const { player_id } of roomPlayers) {
-    await insertCards(supabase, roomId, player_id, room.cards_per_player)
+    await insertCards(supabase, roomId, player_id, room.cards_per_player, newGameNumber)
   }
 
   // Volver a waiting e incrementar game_number — dispara el realtime para todos
@@ -99,7 +103,7 @@ export async function restartRoom(roomId: string): Promise<{ error?: string }> {
     started_at: null,
     finished_at: null,
     current_prize: null,
-    game_number: (room.game_number ?? 1) + 1,
+    game_number: newGameNumber,
   }).eq('id', roomId)
 
   return {}

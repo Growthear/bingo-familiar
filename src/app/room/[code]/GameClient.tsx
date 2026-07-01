@@ -172,6 +172,7 @@ export default function GameClient({
             .select('*')
             .eq('room_id', room.id)
             .eq('player_id', currentUser.id)
+            .eq('game_number', newRoom.game_number)
             .order('card_number')
           if (newCards) setCurrentCards(newCards)
         }
@@ -191,6 +192,7 @@ export default function GameClient({
             .select('*')
             .eq('room_id', room.id)
             .eq('player_id', currentUser.id)
+            .eq('game_number', gameNumberRef.current)
             .order('card_number')
           if (freshCards && freshCards.length > 0) setCurrentCards(freshCards)
         }

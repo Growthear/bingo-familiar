@@ -51,12 +51,13 @@ export default async function RoomPage({ params }: RoomPageProps) {
     .select('*')
     .in('id', ids)
 
-  // Load user's cards
+  // Load user's cards for the current game only
   const { data: cards } = await supabase
     .from('bingo_cards')
     .select('*')
     .eq('room_id', room.id)
     .eq('player_id', user.id)
+    .eq('game_number', room.game_number)
     .order('card_number')
 
   // Load drawn numbers

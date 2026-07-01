@@ -45,6 +45,7 @@ create table public.bingo_cards (
   player_id uuid references public.profiles(id) on delete cascade not null,
   card_number integer not null check (card_number between 1 and 6),
   numbers jsonb not null,
+  game_number integer not null default 1,
   created_at timestamptz default now() not null
 );
 
@@ -222,9 +223,14 @@ declare
 begin
   v_player_id := auth.uid();
 
+  -- Get current game context first so we can scope the card lookup to the current game
+  select shared_prizes, game_number into v_shared_prizes, v_game_number
+  from public.rooms where id = p_room_id;
+
   select numbers into v_card_numbers
   from public.bingo_cards
-  where id = p_card_id and room_id = p_room_id and player_id = v_player_id;
+  where id = p_card_id and room_id = p_room_id and player_id = v_player_id
+    and game_number = v_game_number;
 
   if v_card_numbers is null then
     return jsonb_build_object('success', false, 'error', 'Cartón no encontrado');
@@ -283,10 +289,6 @@ begin
   if not v_is_valid then
     return jsonb_build_object('success', false, 'error', 'Premio no válido todavía');
   end if;
-
-  -- Get current game context (game_number scopes all checks to the current game only)
-  select shared_prizes, game_number into v_shared_prizes, v_game_number
-  from public.rooms where id = p_room_id;
 
   if not v_shared_prizes then
     -- Non-shared mode: only first claimer wins each prize (within current game)
