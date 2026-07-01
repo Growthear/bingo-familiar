@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function HomeClient() {
   const [createState, createAction, createPending] = useActionState(createRoom, null)
   const [joinState, joinAction, joinPending] = useActionState(joinRoom, null)
+  const [isCreating, setIsCreating] = useState(false)
+  const [isJoining, setIsJoining] = useState(false)
   const [intervalSeconds, setIntervalSeconds] = useState('5')
   const [cardsPerPlayer, setCardsPerPlayer] = useState('1')
   const [showDrawn, setShowDrawn] = useState(false)
@@ -46,7 +48,7 @@ export default function HomeClient() {
             <CardTitle className="text-sky-700">Unirme a una sala</CardTitle>
             <CardDescription>Pedile el código al organizador</CardDescription>
           </CardHeader>
-          <form action={joinAction}>
+          <form action={joinAction} onSubmit={() => setIsJoining(true)}>
             <CardContent className="space-y-4">
               {joinState?.error && (
                 <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
@@ -67,9 +69,9 @@ export default function HomeClient() {
               <Button
                 className="w-full h-12 text-base bg-sky-500 hover:bg-sky-600 font-bold"
                 type="submit"
-                disabled={joinPending}
+                disabled={isJoining || joinPending}
               >
-                {joinPending ? 'Entrando...' : 'Entrar a la sala →'}
+                {isJoining || joinPending ? 'Entrando...' : 'Entrar a la sala →'}
               </Button>
             </CardContent>
           </form>
@@ -82,7 +84,7 @@ export default function HomeClient() {
             <CardTitle className="text-sky-700">Crear sala</CardTitle>
             <CardDescription>Vos sos el organizador de esta partida</CardDescription>
           </CardHeader>
-          <form action={createAction}>
+          <form action={createAction} onSubmit={() => setIsCreating(true)}>
             <CardContent className="space-y-4">
               {createState?.error && (
                 <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
@@ -209,9 +211,9 @@ export default function HomeClient() {
               <Button
                 className="w-full h-12 text-base bg-sky-500 hover:bg-sky-600 font-bold"
                 type="submit"
-                disabled={createPending}
+                disabled={isCreating || createPending}
               >
-                {createPending ? 'Creando sala...' : 'Crear sala →'}
+                {isCreating || createPending ? 'Creando sala...' : 'Crear sala →'}
               </Button>
             </CardContent>
           </form>
