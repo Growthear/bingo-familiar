@@ -212,6 +212,11 @@ export default function GameClient({
         filter: `room_id=eq.${room.id}`,
       }, (payload) => {
         const leftId = (payload.old as { player_id: string }).player_id
+        if (leftId === currentUser.id) {
+          toast.info('El host te expulsó de la sala')
+          router.push('/')
+          return
+        }
         setPlayers(prev => prev.filter(p => p.id !== leftId))
       })
       .on('postgres_changes', {

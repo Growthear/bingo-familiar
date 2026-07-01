@@ -115,6 +115,27 @@ export async function resetRanking(): Promise<{ error?: string }> {
   return {}
 }
 
+export async function kickPlayer(roomId: string, playerId: string): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  const { data: room } = await supabase
+    .from('rooms')
+    .select('host_id, status')
+    .eq('id', roomId)
+    .single()
+
+  if (!room || room.host_id !== user.id) return { error: 'Solo el host puede expulsar jugadores' }
+  if (room.status !== 'waiting') return { error: 'Solo se puede expulsar en la sala de espera' }
+  if (playerId === user.id) return { error: 'No podés expulsarte a vos mismo' }
+
+  await supabase.from('bingo_cards').delete().eq('room_id', roomId).eq('player_id', playerId)
+  await supabase.from('room_players').delete().eq('room_id', roomId).eq('player_id', playerId)
+
+  return {}
+}
+
 export async function joinRoom(_: unknown, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

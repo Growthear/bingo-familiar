@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { kickPlayer } from '@/app/actions'
 
 interface WaitingRoomProps {
   room: Room
@@ -31,6 +32,8 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
   const [isLeaving, startLeaving] = useTransition()
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  const [kickTarget, setKickTarget] = useState<string | null>(null)
+  const [isKicking, startKicking] = useTransition()
   const supabase = createClient()
 
   const handleInterval = (v: string | null) => { if (v) setInterval(v) }
@@ -121,22 +124,57 @@ export default function WaitingRoom({ room, players, currentUserId }: WaitingRoo
           <div className="space-y-2">
             <p className="text-sm font-semibold text-sky-700">Jugadores ({players.length})</p>
             <div className="flex flex-wrap gap-2">
-              {players.map(p => (
-                <div key={p.id} className="flex items-center gap-1.5 bg-sky-50 border border-sky-200 rounded-full px-3 py-1.5">
-                  <Avatar className="h-6 w-6">
-                    {p.avatar_url && <AvatarImage src={p.avatar_url} alt={p.username} />}
-                    <AvatarFallback className="text-[9px] bg-sky-200 text-sky-700 font-bold">
-                      {p.username.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium">{p.username}</span>
-                  {p.id === room.host_id && (
-                    <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-sky-100 text-sky-700">
-                      Host
-                    </Badge>
-                  )}
-                </div>
-              ))}
+              {players.map(p => {
+                const canKick = isHost && p.id !== room.host_id
+                const isTarget = kickTarget === p.id
+                if (isTarget) {
+                  return (
+                    <div key={p.id} className="flex items-center gap-1.5 bg-red-50 border-2 border-red-300 rounded-full px-3 py-1.5">
+                      <span className="text-sm font-medium text-red-700">¿Expulsar a {p.username}?</span>
+                      <button
+                        onClick={() => {
+                          startKicking(async () => {
+                            const result = await kickPlayer(room.id, p.id)
+                            if (result.error) toast.error(result.error)
+                            setKickTarget(null)
+                          })
+                        }}
+                        disabled={isKicking}
+                        className="text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded-full px-2 py-0.5 disabled:opacity-50"
+                      >
+                        {isKicking ? '...' : 'Sí'}
+                      </button>
+                      <button
+                        onClick={() => setKickTarget(null)}
+                        disabled={isKicking}
+                        className="text-xs font-medium text-gray-500 hover:text-gray-700"
+                      >
+                        No
+                      </button>
+                    </div>
+                  )
+                }
+                return (
+                  <div
+                    key={p.id}
+                    onClick={canKick ? () => setKickTarget(p.id) : undefined}
+                    className={`flex items-center gap-1.5 bg-sky-50 border border-sky-200 rounded-full px-3 py-1.5 ${canKick ? 'cursor-pointer active:scale-95 hover:bg-red-50 hover:border-red-200 transition-all' : ''}`}
+                  >
+                    <Avatar className="h-6 w-6">
+                      {p.avatar_url && <AvatarImage src={p.avatar_url} alt={p.username} />}
+                      <AvatarFallback className="text-[9px] bg-sky-200 text-sky-700 font-bold">
+                        {p.username.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">{p.username}</span>
+                    {p.id === room.host_id && (
+                      <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-sky-100 text-sky-700">
+                        Host
+                      </Badge>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </CardContent>

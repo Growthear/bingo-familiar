@@ -103,6 +103,10 @@ create policy "Authenticated users can join rooms" on public.room_players
   for insert with check (auth.uid() = player_id);
 create policy "Players can leave rooms" on public.room_players
   for delete using (auth.uid() = player_id);
+create policy "Host can remove players from room" on public.room_players
+  for delete using (
+    auth.uid() = (select host_id from public.rooms where id = room_id)
+  );
 
 -- bingo_cards
 create policy "Players can see own cards" on public.bingo_cards
